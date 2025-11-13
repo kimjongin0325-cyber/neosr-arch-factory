@@ -1,0 +1,306 @@
+asid_arch.py: import torch
+asid_arch.py: import torch.nn.functional as F
+asid_arch.py: from einops import rearrange
+asid_arch.py: from einops.layers.torch import Rearrange, Reduce
+asid_arch.py: from torch import einsum, nn
+asid_arch.py: from neosr.archs.arch_util import net_opt
+asid_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+atd_arch.py: import math
+atd_arch.py: import numpy as np
+atd_arch.py: import torch
+atd_arch.py: from torch import nn
+atd_arch.py: from torch.nn import functional as F
+atd_arch.py: from torch.nn.init import trunc_normal_
+atd_arch.py: from neosr.archs.arch_util import net_opt, to_2tuple
+atd_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+catanet_arch.py: import torch
+catanet_arch.py: from einops import rearrange
+catanet_arch.py: from torch import nn
+catanet_arch.py: from torch.nn import functional as F
+catanet_arch.py: from neosr.archs.arch_util import net_opt
+catanet_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+cfsr_arch.py: import torch
+cfsr_arch.py: from torch import nn
+cfsr_arch.py: from torch.nn import functional as F
+cfsr_arch.py: from neosr.archs.arch_util import net_opt
+cfsr_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+compact_arch.py: from torch import nn
+compact_arch.py: from torch.nn import functional as F
+compact_arch.py: from neosr.archs.arch_util import net_opt
+compact_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+craft_arch.py: import numbers
+craft_arch.py: import torch
+craft_arch.py: import torch.nn.functional as F
+craft_arch.py: from einops import rearrange
+craft_arch.py: from torch import nn
+craft_arch.py: from torch.nn.init import trunc_normal_
+craft_arch.py: from neosr.archs.arch_util import net_opt
+craft_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+cugan_arch.py: import torch
+cugan_arch.py: from torch import nn as nn
+cugan_arch.py: from torch.nn import functional as F
+cugan_arch.py: from neosr.archs.arch_util import net_opt
+cugan_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+dat_arch.py: import math
+dat_arch.py: import numpy as np
+dat_arch.py: import torch
+dat_arch.py: from einops import rearrange
+dat_arch.py: from einops.layers.torch import Rearrange
+dat_arch.py: from torch import nn
+dat_arch.py: from torch.nn import functional as F
+dat_arch.py: from torch.nn.init import trunc_normal_
+dat_arch.py: from torch.utils import checkpoint
+dat_arch.py: from neosr.archs.arch_util import DropPath, net_opt
+dat_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+dct_arch.py: import math
+dct_arch.py: import numpy as np
+dct_arch.py: import torch
+dct_arch.py: from einops import rearrange
+dct_arch.py: from einops.layers.torch import Rearrange
+dct_arch.py: from torch import nn
+dct_arch.py: from torch.nn import functional as F
+dct_arch.py: from torch.nn.init import trunc_normal_
+dct_arch.py: from neosr.archs.arch_util import DropPath, net_opt
+dct_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+dctlsa_arch.py: import torch
+dctlsa_arch.py: import torch.nn.functional as F
+dctlsa_arch.py: from collections import OrderedDict
+dctlsa_arch.py: from torch import nn
+dctlsa_arch.py: from neosr.archs.arch_util import net_opt, to_2tuple
+dctlsa_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+ditn_arch.py: import math
+ditn_arch.py: import numbers
+ditn_arch.py: import torch
+ditn_arch.py: import torch.nn.functional as F
+ditn_arch.py: from einops import rearrange
+ditn_arch.py: from torch import nn
+ditn_arch.py: from neosr.archs.arch_util import net_opt
+ditn_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+drct_arch.py: import math
+drct_arch.py: import torch
+drct_arch.py: from torch import nn
+drct_arch.py: from torch.nn.init import trunc_normal_
+drct_arch.py: from neosr.archs.arch_util import DropPath, net_opt, to_2tuple
+drct_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+dunet_arch.py: from torch import Tensor, nn
+dunet_arch.py: from torch.nn.utils import spectral_norm
+dunet_arch.py: from neosr.archs.arch_util import DySample
+dunet_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+ea2fpn_arch.py: import torch
+ea2fpn_arch.py: from torch import Tensor, nn
+ea2fpn_arch.py: from torch.nn import Conv2d, Module, Parameter
+ea2fpn_arch.py: from torch.nn.utils import spectral_norm
+ea2fpn_arch.py: from torchvision import models
+ea2fpn_arch.py: from torchvision.models import ResNet18_Weights
+ea2fpn_arch.py: from neosr.archs.arch_util import DySample
+ea2fpn_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+eimn_arch.py: import math
+eimn_arch.py: import torch
+eimn_arch.py: from torch import nn
+eimn_arch.py: from torch.nn import functional as F
+eimn_arch.py: from neosr.archs.arch_util import DropPath, net_opt
+eimn_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+esc_arch.py: from collections.abc import Sequence
+esc_arch.py: from math import log2
+esc_arch.py: import torch
+esc_arch.py: import torch.nn as nn
+esc_arch.py: import torch.nn.functional as F
+esc_arch.py: from einops import rearrange
+esc_arch.py: from torch import Tensor
+esc_arch.py: from torch.nn.attention import SDPBackend, sdpa_kernel
+esc_arch.py: from torch.nn.attention.flex_attention import flex_attention
+esc_arch.py: from neosr.archs.arch_util import DySample, net_opt
+esc_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+esrgan_arch.py: import torch
+esrgan_arch.py: from torch import nn
+esrgan_arch.py: from torch.nn import functional as F
+esrgan_arch.py: from torch.nn.modules.batchnorm import _BatchNorm
+esrgan_arch.py: from neosr.archs.arch_util import net_opt
+esrgan_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+flexnet_arch.py: import math
+flexnet_arch.py: from typing import Any, Literal
+flexnet_arch.py: import torch
+flexnet_arch.py: from einops import rearrange
+flexnet_arch.py: from torch import nn
+flexnet_arch.py: from torch.nn import functional as F
+flexnet_arch.py: from neosr.archs.arch_util import DySample, net_opt
+flexnet_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+grformer_arch.py: import torch
+grformer_arch.py: from einops import rearrange
+grformer_arch.py: from torch import nn
+grformer_arch.py: from torch.nn import functional as F
+grformer_arch.py: from neosr.archs.arch_util import DropPath, net_opt
+grformer_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+hasn_arch.py: from collections import OrderedDict
+hasn_arch.py: import torch
+hasn_arch.py: from torch import nn
+hasn_arch.py: from torch.nn import functional as F
+hasn_arch.py: from neosr.archs.arch_util import DropPath, net_opt
+hasn_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+hat_arch.py: import math
+hat_arch.py: import torch
+hat_arch.py: from einops import rearrange
+hat_arch.py: from torch import nn
+hat_arch.py: from torch.nn.init import trunc_normal_
+hat_arch.py: from neosr.archs.arch_util import DropPath, net_opt, to_2tuple
+hat_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+hitsrf_arch.py: import math
+hitsrf_arch.py: import torch
+hitsrf_arch.py: import torch.nn.functional as F
+hitsrf_arch.py: from torch import nn
+hitsrf_arch.py: from torch.nn.init import trunc_normal_
+hitsrf_arch.py: from torch.utils import checkpoint
+hitsrf_arch.py: from neosr.archs.arch_util import DropPath, net_opt, to_2tuple
+hitsrf_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+hma_arch.py: import math
+hma_arch.py: import torch
+hma_arch.py: from torch import nn
+hma_arch.py: from torch.nn.init import trunc_normal_
+hma_arch.py: from neosr.archs.arch_util import net_opt, to_2tuple
+hma_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+krgn_arch.py: import torch
+krgn_arch.py: from torch import nn
+krgn_arch.py: from torch.nn import functional as F
+krgn_arch.py: from neosr.archs.arch_util import net_opt
+krgn_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+lmlt_arch.py: import numpy as np
+lmlt_arch.py: import torch
+lmlt_arch.py: from torch import nn
+lmlt_arch.py: from torch.nn import functional as F
+lmlt_arch.py: from neosr.archs.arch_util import net_opt, to_2tuple
+lmlt_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+man_arch.py: import torch
+man_arch.py: import torch.nn.functional as F
+man_arch.py: from torch import nn
+man_arch.py: from neosr.archs.arch_util import net_opt
+man_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+metagan_arch.py: from collections.abc import Sequence
+metagan_arch.py: import torch
+metagan_arch.py: from torch import nn
+metagan_arch.py: from torch.nn.init import trunc_normal_
+metagan_arch.py: from torch.nn.utils import spectral_norm
+metagan_arch.py: from neosr.archs.arch_util import DropPath
+metagan_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+moesr_arch.py: import math
+moesr_arch.py: from typing import Literal
+moesr_arch.py: import torch
+moesr_arch.py: from torch import nn
+moesr_arch.py: from torch.nn import functional as F
+moesr_arch.py: from torch.nn.init import trunc_normal_
+moesr_arch.py: from neosr.archs.arch_util import DySample, net_opt
+moesr_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+mosrv2_arch.py: import math
+mosrv2_arch.py: from typing import Literal
+mosrv2_arch.py: import torch
+mosrv2_arch.py: from torch import Tensor, nn
+mosrv2_arch.py: from torch.nn import functional as F
+mosrv2_arch.py: from torch.nn.init import trunc_normal_
+mosrv2_arch.py: from neosr.archs.arch_util import DySample, net_opt
+mosrv2_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+msdan_arch.py: import torch
+msdan_arch.py: import torch.nn
+msdan_arch.py: from torch import nn as nn
+msdan_arch.py: from torch.nn import functional as F
+msdan_arch.py: from neosr.archs.arch_util import net_opt
+msdan_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+ninasr_arch.py: import torch
+ninasr_arch.py: import torch.nn as nn
+ninasr_arch.py: from neosr.archs.arch_util import net_opt
+ninasr_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+omnisr_arch.py: import math
+omnisr_arch.py: import torch
+omnisr_arch.py: import torch.nn.functional as F
+omnisr_arch.py: from einops import rearrange
+omnisr_arch.py: from einops.layers.torch import Rearrange, Reduce
+omnisr_arch.py: from torch import einsum, nn
+omnisr_arch.py: from neosr.archs.arch_util import net_opt
+omnisr_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+patchgan_arch.py: import functools
+patchgan_arch.py: from torch import nn
+patchgan_arch.py: from torch.nn.utils import spectral_norm
+patchgan_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+plainusr_arch.py: import torch
+plainusr_arch.py: import torch.nn.functional as F
+plainusr_arch.py: from einops.layers.torch import Rearrange, Reduce
+plainusr_arch.py: from torch import nn
+plainusr_arch.py: from torch.nn.utils.parametrize import remove_parametrizations
+plainusr_arch.py: from neosr.archs.arch_util import net_opt
+plainusr_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+plksr_arch.py: from collections.abc import Sequence
+plksr_arch.py: from functools import partial
+plksr_arch.py: from typing import Literal
+plksr_arch.py: import torch
+plksr_arch.py: from torch import nn
+plksr_arch.py: from torch.nn import functional as F
+plksr_arch.py: from torch.nn.init import trunc_normal_
+plksr_arch.py: from neosr.archs.arch_util import net_opt
+plksr_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+rcan_arch.py: import math
+rcan_arch.py: import torch
+rcan_arch.py: from torch import nn
+rcan_arch.py: from neosr.archs.arch_util import net_opt
+rcan_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+realplksr_arch.py: from functools import partial
+realplksr_arch.py: import torch
+realplksr_arch.py: from torch import nn
+realplksr_arch.py: from torch.nn.init import trunc_normal_
+realplksr_arch.py: from neosr.archs.arch_util import DySample, net_opt
+realplksr_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+rgt_arch.py: import math
+rgt_arch.py: import numpy as np
+rgt_arch.py: import torch
+rgt_arch.py: from einops import rearrange
+rgt_arch.py: from einops.layers.torch import Rearrange
+rgt_arch.py: from torch import nn
+rgt_arch.py: from torch.nn import functional as F
+rgt_arch.py: from torch.nn.init import trunc_normal_
+rgt_arch.py: from torch.utils import checkpoint
+rgt_arch.py: from neosr.archs.arch_util import DropPath, net_opt
+rgt_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+safmn_arch.py: import torch
+safmn_arch.py: import torch.nn.functional as F
+safmn_arch.py: from torch import nn
+safmn_arch.py: from neosr.archs.arch_util import net_opt
+safmn_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+sebica_arch.py: import torch
+sebica_arch.py: from torch import nn
+sebica_arch.py: from torch.nn import functional as F
+sebica_arch.py: from neosr.archs.arch_util import net_opt
+sebica_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+span_arch.py: from collections import OrderedDict
+span_arch.py: import torch
+span_arch.py: import torch.nn.functional as F
+span_arch.py: from torch import nn
+span_arch.py: from neosr.archs.arch_util import net_opt
+span_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+spanplus_arch.py: import torch
+spanplus_arch.py: import torch.nn.functional as F
+spanplus_arch.py: from torch import nn
+spanplus_arch.py: from torch.nn.init import trunc_normal_
+spanplus_arch.py: from neosr.archs.arch_util import DySample, net_opt
+spanplus_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+srformer_arch.py: import math
+srformer_arch.py: import torch
+srformer_arch.py: import torch.nn.functional as F
+srformer_arch.py: from torch import nn
+srformer_arch.py: from torch.nn.init import trunc_normal_
+srformer_arch.py: from torch.utils import checkpoint
+srformer_arch.py: from neosr.archs.arch_util import DropPath, net_opt, to_2tuple
+srformer_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+swinir_arch.py: import math
+swinir_arch.py: import torch
+swinir_arch.py: from torch import nn
+swinir_arch.py: from torch.nn.init import trunc_normal_
+swinir_arch.py: from torch.utils import checkpoint
+swinir_arch.py: from neosr.archs.arch_util import DropPath, net_opt, to_2tuple
+swinir_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+unet_arch.py: from torch import nn
+unet_arch.py: from torch.nn import functional as F
+unet_arch.py: from torch.nn.utils import spectral_norm
+unet_arch.py: from neosr.utils.registry import ARCH_REGISTRY
+vgg_arch.py: from collections import OrderedDict
+vgg_arch.py: from pathlib import Path
+vgg_arch.py: import torch
+vgg_arch.py: from torch import Tensor, nn
+vgg_arch.py: from torchvision.models import VGG19_Weights, vgg
+vgg_arch.py: from neosr.utils.registry import ARCH_REGISTRY
