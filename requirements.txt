@@ -1,9 +1,9 @@
 torch==2.2.0
 torchvision
-onnx==1.15.0
-onnxruntime==1.17.0
+onnx==1.16.0
 einops
-timm
+timm==0.9.12
 addict
 yacs
 scipy
+
