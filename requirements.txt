@@ -1,0 +1,9 @@
+torch==2.2.0
+torchvision
+onnx==1.15.0
+onnxruntime==1.17.0
+einops
+timm
+addict
+yacs
+scipy
