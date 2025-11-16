@@ -1,7 +1,7 @@
 import os
 import importlib
 from config_paths import setup_paths
-from registry import ARCH_REGISTRY
+# from registry import ARCH_REGISTRY
 
 BASE, ARCH_DIR = setup_paths()
 

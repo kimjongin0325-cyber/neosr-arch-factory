@@ -9,7 +9,7 @@ import argparse
 from config_paths import setup_paths
 BASE, ARCH_DIR = setup_paths()
 
-from registry import ARCH_REGISTRY
+# from registry import ARCH_REGISTRY
 
 # arch 자동 import
 for file in os.listdir(ARCH_DIR):
