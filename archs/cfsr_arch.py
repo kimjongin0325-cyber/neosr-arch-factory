@@ -288,7 +288,7 @@ class cfsr(nn.Module):
         depths=(6, 6),
         dw_size=9,
         mlp_ratio=2.0,
-        upscale=upscale,
+        upscale=4,
         img_range=1.0,
         upsampler="pixelshuffledirect",
         mean_norm=False,

@@ -799,7 +799,7 @@ class craft(nn.Module):
         qkv_bias=True,
         qk_scale=None,
         norm_layer=nn.LayerNorm,
-        upscale=upscale,
+        upscale=4,
         img_range=1.0,
         resi_connection="1conv",
         **kwargs,

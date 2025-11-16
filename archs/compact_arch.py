@@ -31,7 +31,7 @@ class compact(nn.Module):
         num_out_ch=3,
         num_feat=64,
         num_conv=16,
-        upscale=upscale,
+        upscale=4,
         act_type="prelu",
         **kwargs,
     ):

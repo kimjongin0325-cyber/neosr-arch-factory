@@ -953,7 +953,7 @@ class dat(nn.Module):
         act_layer=nn.GELU,
         norm_layer=nn.LayerNorm,
         use_chk=False,
-        upscale=upscale,
+        upscale=4,
         img_range=1.0,
         resi_connection="1conv",
         upsampler="pixelshuffle",
