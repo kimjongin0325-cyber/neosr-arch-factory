@@ -495,7 +495,7 @@ class catanet(nn.Module):
     def forward(self, x):
         if self.upscale != 1:
             base = F.interpolate(
-                x,self.upscale = 4_factor=self.upscale, mode="bilinear", align_corners=False
+                x,scale_factor=self.upscale=self.upscale, mode="bilinear", align_corners=False
             )
         else:
             base = x

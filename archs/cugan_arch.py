@@ -323,7 +323,7 @@ class cugan(nn.Module):
             x = x[:, :, : h0 * self.scale, : w0 * self.scale]
 
         if self.scale == 4:
-            x += F.interpolate(x00,self.upscale = 4_factor=4, mode="nearest")
+            x += F.interpolate(x00,scale_factor=self.upscale=4, mode="nearest")
 
         if self.is_pro:
             x = (x - 0.15) / 0.7

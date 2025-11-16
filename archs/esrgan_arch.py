@@ -208,10 +208,10 @@ class esrgan(nn.Module):
         feat = feat + body_feat
         # upsample
         feat = self.lrelu(
-            self.conv_up1(F.interpolate(feat,self.upscale = 4_factor=2, mode="nearest"))
+            self.conv_up1(F.interpolate(feat,scale_factor=self.upscale=2, mode="nearest"))
         )
         feat = self.lrelu(
-            self.conv_up2(F.interpolate(feat,self.upscale = 4_factor=2, mode="nearest"))
+            self.conv_up2(F.interpolate(feat,scale_factor=self.upscale=2, mode="nearest"))
         )
         out = self.conv_last(self.lrelu(self.conv_hr(feat)))
         return out

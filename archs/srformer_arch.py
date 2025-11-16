@@ -1198,12 +1198,12 @@ class srformer(nn.Module):
             x = self.conv_before_upsample(x)
             x = self.lrelu(
                 self.conv_up1(
-                    torch.nn.functional.interpolate(x,self.upscale = 4_factor=2, mode="nearest")
+                    torch.nn.functional.interpolate(x,scale_factor=self.upscale=2, mode="nearest")
                 )
             )
             x = self.lrelu(
                 self.conv_up2(
-                    torch.nn.functional.interpolate(x,self.upscale = 4_factor=2, mode="nearest")
+                    torch.nn.functional.interpolate(x,scale_factor=self.upscale=2, mode="nearest")
                 )
             )
             x = self.conv_last(self.lrelu(self.conv_hr(x)))

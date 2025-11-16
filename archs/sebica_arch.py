@@ -173,7 +173,7 @@ class sebica(nn.Module):
         h = self.tail(body_out)
         base = torch.clamp(
             F.interpolate(
-                x,self.upscale = 4_factor=self.scale, mode="bilinear", align_corners=False
+                x,scale_factor=self.upscale=self.scale, mode="bilinear", align_corners=False
             ),
             0,
             1,

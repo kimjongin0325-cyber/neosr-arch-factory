@@ -13,13 +13,13 @@ from torch.nn import functional as F
 
 
 class Interpolate(nn.Module):
-    def __init__(self,self.upscale = 4_factor: int = 4, mode: str = "nearest"):
+    def __init__(self,scale_factor=self.upscale: int = 4, mode: str = "nearest"):
         super().__init__()
-        self.scale_factor =self.upscale = 4_factor
+        self.scale_factor =scale_factor=self.upscale
         self.mode = mode
 
     def forward(self, x):
-        return F.interpolate(x,self.upscale = 4_factor=self.scale_factor, mode=self.mode)
+        return F.interpolate(x,scale_factor=self.upscale=self.scale_factor, mode=self.mode)
 
 
 class InterpolateUpsampler(nn.Sequential):

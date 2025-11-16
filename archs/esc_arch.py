@@ -593,7 +593,7 @@ class esc(nn.Module):
             feat = self.last(self.ln_last(feat)) + skip
             feat = self.to_img(feat)
             return F.pixel_shuffle(feat, self.upscaling_factor) + F.interpolate(
-                x,self.upscale = 4_factor=self.upscaling_factor, mode="bicubic"
+                x,scale_factor=self.upscale=self.upscaling_factor, mode="bicubic"
             )
 
         for block in self.blocks:
