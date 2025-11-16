@@ -200,7 +200,7 @@ class SAL(nn.Module):
 
 
 class UpsampleOneStep(nn.Sequential):
-    def __init__(self, scale, num_feat, num_out_ch):
+    def __init__(self,self.upscale = 4, num_feat, num_out_ch):
         self.num_feat = num_feat
         m = []
         m.append(nn.Conv2d(num_feat, (scale**2) * num_out_ch, 3, 1, 1))

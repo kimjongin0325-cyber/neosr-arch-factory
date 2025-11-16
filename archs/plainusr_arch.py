@@ -397,10 +397,10 @@ class plainusr(nn.Module):
     https://github.com/icandle/PlainUSR
     """
 
-    def __init__(self, n_feat=64, im_feat=(64, 48, 32), attn_feat=16, scale=upscale):
+    def __init__(self, n_feat=64, im_feat=(64, 48, 32), attn_feat=16,self.upscale = 4=upscale):
         super().__init__()
         self.n_feat = n_feat
-        self.scale = scale
+        self.scale =self.upscale = 4
         self.im_feat = im_feat
         self.head = nn.Conv2d(3, n_feat + 3, 3, 1, 1)
 
@@ -428,14 +428,14 @@ class plainusr(nn.Module):
         self.init_weights()
 
     def init_weights(self):
-        scale_squared = self.scale**2
+       self.upscale = 4_squared = self.scale**2
         self.head.weight.data[-3, 0, 1, 1] += 1
         self.head.weight.data[-2, 1, 1, 1] += 1
         self.head.weight.data[-1, 2, 1, 1] += 1
 
         self.tail[0].weight.data[:scale_squared, -3, 1, 1] += 1
-        self.tail[0].weight.data[scale_squared : 2 * scale_squared, -2, 1, 1] += 1
-        self.tail[0].weight.data[2 * scale_squared :, -1, 1, 1] += 1
+        self.tail[0].weight.data[scale_squared : 2 *self.upscale = 4_squared, -2, 1, 1] += 1
+        self.tail[0].weight.data[2 *self.upscale = 4_squared :, -1, 1, 1] += 1
 
     def fast_forward(self, x):
         x = self.head(x)

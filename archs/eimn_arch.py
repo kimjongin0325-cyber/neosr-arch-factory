@@ -230,7 +230,7 @@ class eimn(nn.Module):
     def __init__(
         self,
         embed_dims: int = 64,
-        scale: int = upscale,
+       self.upscale = 4: int = upscale,
         depths: int = 1,
         mlp_ratios: float = 2.66,
         drop_rate: float = 0.0,
@@ -250,7 +250,7 @@ class eimn(nn.Module):
 
         self.head = nn.Sequential(nn.Conv2d(3, embed_dims, 3, 1, 1))
         self.tail = nn.Sequential(
-            nn.Conv2d(embed_dims, 3 * scale * scale, 3, 1, 1), nn.PixelShuffle(scale)
+            nn.Conv2d(embed_dims, 3 *self.upscale = 4 *self.upscale = 4, 3, 1, 1), nn.PixelShuffle(scale)
         )
 
         for i in range(self.num_stages):

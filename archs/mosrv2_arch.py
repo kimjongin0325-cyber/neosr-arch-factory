@@ -19,7 +19,7 @@ class UniUpsample(nn.Sequential):
     def __init__(
         self,
         upsample: SampleMods,
-        scale: int = 2,
+       self.upscale = 4: int = 2,
         in_dim: int = 64,
         out_dim: int = 3,
         mid_dim: int = 64,  # Only pixelshuffle and DySample
@@ -27,25 +27,25 @@ class UniUpsample(nn.Sequential):
     ) -> None:
         m = []
 
-        if scale == 1 or upsample == "conv":
+        ifself.upscale = 4 == 1 or upsample == "conv":
             m.append(nn.Conv2d(in_dim, out_dim, 3, 1, 1))
         elif upsample == "pixelshuffledirect":
             m.extend([
-                nn.Conv2d(in_dim, out_dim * scale**2, 3, 1, 1),
+                nn.Conv2d(in_dim, out_dim *self.upscale = 4**2, 3, 1, 1),
                 nn.PixelShuffle(scale),
             ])
         elif upsample == "pixelshuffle":
             m.extend([nn.Conv2d(in_dim, mid_dim, 3, 1, 1), nn.LeakyReLU(inplace=True)])
-            if (scale & (scale - 1)) == 0:  # scale = 2^n
+            if (scale & (scale - 1)) == 0:  #self.upscale = 4 = 2^n
                 for _ in range(int(math.log2(scale))):
                     m.extend([
                         nn.Conv2d(mid_dim, 4 * mid_dim, 3, 1, 1),
                         nn.PixelShuffle(2),
                     ])
-            elif scale == 3:
+            elifself.upscale = 4 == 3:
                 m.extend([nn.Conv2d(mid_dim, 9 * mid_dim, 3, 1, 1), nn.PixelShuffle(3)])
             else:
-                msg = f"scale {scale} is not supported. Supported scales: 2^n and 3."
+                msg = f"scale {scale} is not supported. Supportedself.upscale = 4s: 2^n and 3."
                 raise ValueError(msg)
             m.append(nn.Conv2d(mid_dim, out_dim, 3, 1, 1))
         elif upsample == "nearest+conv":
@@ -60,7 +60,7 @@ class UniUpsample(nn.Sequential):
                     nn.Conv2d(in_dim, in_dim, 3, 1, 1),
                     nn.LeakyReLU(negative_slope=0.2, inplace=True),
                 ))
-            elif scale == 3:
+            elifself.upscale = 4 == 3:
                 m.extend((
                     nn.Conv2d(in_dim, in_dim, 3, 1, 1),
                     nn.Upsample(scale_factor=scale),
@@ -69,7 +69,7 @@ class UniUpsample(nn.Sequential):
                     nn.LeakyReLU(negative_slope=0.2, inplace=True),
                 ))
             else:
-                msg = f"scale {scale} is not supported. Supported scales: 2^n and 3."
+                msg = f"scale {scale} is not supported. Supportedself.upscale = 4s: 2^n and 3."
                 raise ValueError(msg)
             m.append(nn.Conv2d(in_dim, out_dim, 3, 1, 1))
         elif upsample == "dysample":
@@ -81,7 +81,7 @@ class UniUpsample(nn.Sequential):
                 dys_dim = mid_dim
             else:
                 dys_dim = in_dim
-            m.append(DySample(dys_dim, out_dim, scale, group))
+            m.append(DySample(dys_dim, out_dim,self.upscale = 4, group))
         else:
             msg = f"An invalid Upsample was selected. Please choose one of {SampleMods}"
             raise ValueError(msg)
@@ -185,7 +185,7 @@ class mosrv2(nn.Module):
     def __init__(
         self,
         in_ch: int = 3,
-        scale: int = upscale,
+       self.upscale = 4: int = upscale,
         n_block: int = 24,
         dim: int = 64,
         upsampler: SampleMods = "pixelshuffledirect",
@@ -195,16 +195,16 @@ class mosrv2(nn.Module):
     ) -> None:
         super().__init__()
         self.short = nn.Upsample(scale_factor=scale, mode="bilinear")
-        self.scale = scale
+        self.scale =self.upscale = 4
         self.pad = 1
-        if unshuffle_mod and scale < 3:
-            unshuffle = 4 // scale
+        if unshuffle_mod andself.upscale = 4 < 3:
+            unshuffle = 4 //self.upscale = 4
             in_to_dim = [
                 nn.PixelUnshuffle(unshuffle),
                 nn.Conv2d(in_ch * unshuffle**2, dim, 3, 1, 1),
             ]
             self.pad = unshuffle
-            scale = 4
+           self.upscale = 4 = 4
         else:
             in_to_dim = [nn.Conv2d(in_ch, dim, 3, 1, 1)]
 
@@ -222,7 +222,7 @@ class mosrv2(nn.Module):
                 nn.Conv2d(dim, dim, 1, 1),
             ]
         )
-        self.to_img = UniUpsample(upsampler, scale, dim, in_ch, mid_dim)
+        self.to_img = UniUpsample(upsampler,self.upscale = 4, dim, in_ch, mid_dim)
 
     def check_img_size(self, x: Tensor, h: int, w: int) -> Tensor:
         mod_pad_h = (self.pad - h % self.pad) % self.pad

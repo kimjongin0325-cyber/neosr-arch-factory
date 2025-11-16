@@ -27,16 +27,16 @@ class MeanShift(nn.Conv2d):
 
 
 class Upsampler(nn.Sequential):
-    def __init__(self, conv, scale, n_feat, bn=False, act=False, bias=True):
+    def __init__(self, conv,self.upscale = 4, n_feat, bn=False, act=False, bias=True):
         m = []
-        if (scale & (scale - 1)) == 0:  # Is scale = 2^n?
+        if (scale & (scale - 1)) == 0:  # Isself.upscale = 4 = 2^n?
             for _ in range(int(math.log2(scale))):
                 m.extend((conv(n_feat, 4 * n_feat, 3, bias), nn.PixelShuffle(2)))
                 if bn:
                     m.append(nn.BatchNorm2d(n_feat))
                 if act:
                     m.append(act())
-        elif scale == 3:
+        elifself.upscale = 4 == 3:
             m.extend((conv(n_feat, 9 * n_feat, 3, bias), nn.PixelShuffle(3)))
             if bn:
                 m.append(nn.BatchNorm2d(n_feat))
@@ -154,7 +154,7 @@ class rcan(nn.Module):
         kernel_size=3,
         reduction=16,
         n_colors=3,
-        scale=upscale,
+       self.upscale = 4=upscale,
         act=None,
         norm=False,
         **kwargs,  # noqa: ARG002
@@ -194,7 +194,7 @@ class rcan(nn.Module):
 
         # define tail module
         modules_tail = [
-            Upsampler(conv, scale, n_feats, act=False),
+            Upsampler(conv,self.upscale = 4, n_feats, act=False),
             conv(n_feats, n_colors, kernel_size),
         ]
 

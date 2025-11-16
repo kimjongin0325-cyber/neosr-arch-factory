@@ -21,7 +21,7 @@ class UniUpsample(nn.Sequential):
     def __init__(
         self,
         upsample: SampleMods,
-        scale: int = 2,
+       self.upscale = 4: int = 2,
         in_dim: int = 64,
         out_dim: int = 3,
         mid_dim: int = 64,  # Only pixelshuffle
@@ -29,25 +29,25 @@ class UniUpsample(nn.Sequential):
     ):
         m = []
 
-        if scale == 1 or upsample == "conv":
+        ifself.upscale = 4 == 1 or upsample == "conv":
             m.append(nn.Conv2d(in_dim, out_dim, 3, 1, 1))
         elif upsample == "pixelshuffledirect":
             m.extend([
-                nn.Conv2d(in_dim, out_dim * scale**2, 3, 1, 1),
+                nn.Conv2d(in_dim, out_dim *self.upscale = 4**2, 3, 1, 1),
                 nn.PixelShuffle(scale),
             ])
         elif upsample == "pixelshuffle":
             m.extend([nn.Conv2d(in_dim, mid_dim, 3, 1, 1), nn.LeakyReLU(inplace=True)])
-            if (scale & (scale - 1)) == 0:  # scale = 2^n
+            if (scale & (scale - 1)) == 0:  #self.upscale = 4 = 2^n
                 for _ in range(int(math.log2(scale))):
                     m.extend([
                         nn.Conv2d(mid_dim, 4 * mid_dim, 3, 1, 1),
                         nn.PixelShuffle(2),
                     ])
-            elif scale == 3:
+            elifself.upscale = 4 == 3:
                 m.extend([nn.Conv2d(mid_dim, 9 * mid_dim, 3, 1, 1), nn.PixelShuffle(3)])
             else:
-                msg = f"scale {scale} is not supported. Supported scales: 2^n and 3."
+                msg = f"scale {scale} is not supported. Supportedself.upscale = 4s: 2^n and 3."
                 raise ValueError(msg)
             m.append(nn.Conv2d(mid_dim, out_dim, 3, 1, 1))
         elif upsample == "nearest+conv":
@@ -62,7 +62,7 @@ class UniUpsample(nn.Sequential):
                     nn.Conv2d(in_dim, in_dim, 3, 1, 1),
                     nn.LeakyReLU(negative_slope=0.2, inplace=True),
                 ))
-            elif scale == 3:
+            elifself.upscale = 4 == 3:
                 m.extend((
                     nn.Conv2d(in_dim, in_dim, 3, 1, 1),
                     nn.Upsample(scale_factor=scale),
@@ -71,11 +71,11 @@ class UniUpsample(nn.Sequential):
                     nn.LeakyReLU(negative_slope=0.2, inplace=True),
                 ))
             else:
-                msg = f"scale {scale} is not supported. Supported scales: 2^n and 3."
+                msg = f"scale {scale} is not supported. Supportedself.upscale = 4s: 2^n and 3."
                 raise ValueError(msg)
             m.append(nn.Conv2d(in_dim, out_dim, 3, 1, 1))
         elif upsample == "dysample":
-            m.append(DySample(in_dim, out_dim, scale, group))
+            m.append(DySample(in_dim, out_dim,self.upscale = 4, group))
         else:
             msg = f"An invalid Upsample was selected. Please choose one of {SampleMods}"
             raise ValueError(msg)
@@ -87,7 +87,7 @@ class UniUpsample(nn.Sequential):
                 [
                     1,  # Block version, if you change something, please number from the end so that you can distinguish between authorized changes and third parties
                     list(SampleMods.__args__).index(upsample),  # UpSample method index
-                    scale,
+                   self.upscale = 4,
                     in_dim,
                     out_dim,
                     mid_dim,
@@ -234,7 +234,7 @@ class moesr(nn.Module):
         self,
         in_ch: int = 3,
         out_ch: int = 3,
-        scale: int = upscale,
+       self.upscale = 4: int = upscale,
         dim: int = 64,
         n_blocks: int = 9,
         n_block: int = 4,
@@ -245,20 +245,20 @@ class moesr(nn.Module):
     ):
         super().__init__()
         if upsampler == "conv":
-            scale = 1
-        self.scale = scale
+           self.upscale = 4 = 1
+        self.scale =self.upscale = 4
         self.in_to_dim = nn.Conv2d(in_ch, dim, 3, 1, 1)
         self.blocks = nn.Sequential(*[
             Blocks(dim, n_block, expansion_factor, expansion_msg)
             for _ in range(n_blocks)
         ])
-        self.upscale = UniUpsample(upsampler, scale, dim, out_ch, upsample_dim)
+        self.upscale = UniUpsample(upsampler,self.upscale = 4, dim, out_ch, upsample_dim)
 
     def check_img_size(self, x, resolution):
         h, w = resolution
-        scaled_size = 2
-        mod_pad_h = (scaled_size - h % scaled_size) % scaled_size
-        mod_pad_w = (scaled_size - w % scaled_size) % scaled_size
+       self.upscale = 4d_size = 2
+        mod_pad_h = (scaled_size - h %self.upscale = 4d_size) %self.upscale = 4d_size
+        mod_pad_w = (scaled_size - w %self.upscale = 4d_size) %self.upscale = 4d_size
         return F.pad(x, (0, mod_pad_w, 0, mod_pad_h), "reflect")
 
     def forward(self, x):

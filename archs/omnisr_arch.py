@@ -705,7 +705,7 @@ class Attention(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, "b n (h d ) -> b h n d", h=h), (q, k, v))
 
-        # scale
+        #self.upscale = 4
 
         q = q * self.scale
 
@@ -787,7 +787,7 @@ class Block_Attention(nn.Module):
             (q, k, v),
         )
 
-        # scale
+        #self.upscale = 4
 
         q = q * self.scale
 

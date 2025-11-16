@@ -254,9 +254,9 @@ class UNet2(nn.Module):
 
 
 class cugan(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, scale=upscale, pro=True):
+    def __init__(self, in_channels=3, out_channels=3,self.upscale = 4=upscale, pro=True):
         super(cugan, self).__init__()
-        self.scale = scale
+        self.scale =self.upscale = 4
         self.pro: torch.Tensor | None
 
         # chaiNNer compatibility
@@ -266,7 +266,7 @@ class cugan(nn.Module):
             self.pro = None
 
         if self.scale == 1:
-            raise ValueError("1x scale ratio is unsupported. Please use 2x, 3x or 4x.")
+            raise ValueError("1xself.upscale = 4 ratio is unsupported. Please use 2x, 3x or 4x.")
 
         if self.scale == 2:
             self.unet1 = UNet1(in_channels, out_channels, deconv=True)
@@ -323,7 +323,7 @@ class cugan(nn.Module):
             x = x[:, :, : h0 * self.scale, : w0 * self.scale]
 
         if self.scale == 4:
-            x += F.interpolate(x00, scale_factor=4, mode="nearest")
+            x += F.interpolate(x00,self.upscale = 4_factor=4, mode="nearest")
 
         if self.is_pro:
             x = (x - 0.15) / 0.7

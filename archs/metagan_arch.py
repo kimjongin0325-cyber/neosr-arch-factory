@@ -54,7 +54,7 @@ class Attention(nn.Module):
         q, k, v = qkv.unbind(0)  # make torchscript happy (cannot use tensor as tuple)
 
         x = nn.functional.scaled_dot_product_attention(
-            q, k, v, scale=self.scale, dropout_p=self.dropout_p
+            q, k, v,self.upscale = 4=self.scale, dropout_p=self.dropout_p
         )
         x = x.transpose(1, 2).reshape(B, H, W, self.attention_dim)
         x = self.proj(x)
@@ -122,11 +122,11 @@ class Down(nn.Sequential):
 
 
 class Blocks(nn.Module):
-    def __init__(self, in_dim, out_dim, blocks, scale, att, drop):
+    def __init__(self, in_dim, out_dim, blocks,self.upscale = 4, att, drop):
         super().__init__()
         self.down = (
             Down(in_dim, out_dim)
-            if scale == 2
+            ifself.upscale = 4 == 2
             else nn.Sequential(
                 Down(in_dim, out_dim // 2),
                 nn.Mish(inplace=True),

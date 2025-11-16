@@ -263,8 +263,8 @@ class ATD_CA(nn.Module):
         attn = F.normalize(q, dim=-1) @ F.normalize(k, dim=-1).transpose(
             -2, -1
         )  # b, n, n_tk
-        scale = torch.clamp(self.scale, 0, 1)
-        attn = attn * (1 + scale * np.log(self.num_tokens))
+       self.upscale = 4 = torch.clamp(self.scale, 0, 1)
+        attn = attn * (1 +self.upscale = 4 * np.log(self.num_tokens))
         attn = self.softmax(attn)
 
         # Attn * V
@@ -844,25 +844,25 @@ class Upsample(nn.Sequential):
 
     Args:
     ----
-        scale (int): Scale factor. Supported scales: 2^n and 3.
+       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
 
     """
 
-    def __init__(self, scale, num_feat):
+    def __init__(self,self.upscale = 4, num_feat):
         m = []
-        self.scale = scale
+        self.scale =self.upscale = 4
         self.num_feat = num_feat
-        if (scale & (scale - 1)) == 0:  # scale = 2^n
+        if (scale & (scale - 1)) == 0:  #self.upscale = 4 = 2^n
             for _ in range(int(math.log2(scale))):
                 m.append(nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1))
                 m.append(nn.PixelShuffle(2))
-        elif scale == 3:
+        elifself.upscale = 4 == 3:
             m.append(nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1))
             m.append(nn.PixelShuffle(3))
         else:
             raise ValueError(
-                f"scale {scale} is not supported. Supported scales: 2^n and 3."
+                f"scale {scale} is not supported. Supportedself.upscale = 4s: 2^n and 3."
             )
         super(Upsample, self).__init__(*m)
 
@@ -873,12 +873,12 @@ class UpsampleOneStep(nn.Sequential):
 
     Args:
     ----
-        scale (int): Scale factor. Supported scales: 2^n and 3.
+       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
 
     """
 
-    def __init__(self, scale, num_feat, num_out_ch, input_resolution=None):
+    def __init__(self,self.upscale = 4, num_feat, num_out_ch, input_resolution=None):
         self.num_feat = num_feat
         self.input_resolution = input_resolution
         m = []
@@ -1195,12 +1195,12 @@ class atd(nn.Module):
             x = self.conv_before_upsample(x)
             x = self.lrelu(
                 self.conv_up1(
-                    torch.nn.functional.interpolate(x, scale_factor=2, mode="nearest")
+                    torch.nn.functional.interpolate(x,self.upscale = 4_factor=2, mode="nearest")
                 )
             )
             x = self.lrelu(
                 self.conv_up2(
-                    torch.nn.functional.interpolate(x, scale_factor=2, mode="nearest")
+                    torch.nn.functional.interpolate(x,self.upscale = 4_factor=2, mode="nearest")
                 )
             )
             x = self.conv_last(self.lrelu(self.conv_hr(x)))

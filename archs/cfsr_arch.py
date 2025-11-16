@@ -91,7 +91,7 @@ class MLP(nn.Module):
         self.fc2 = nn.Conv2d(dim * mlp_ratio, dim, 1)
         self.act = nn.GELU()
 
-        scale_sobel_x = torch.randn(size=(dim * mlp_ratio, 1, 1, 1)) * 1e-3
+       self.upscale = 4_sobel_x = torch.randn(size=(dim * mlp_ratio, 1, 1, 1)) * 1e-3
         self.scale_sobel_x = nn.Parameter(scale_sobel_x)
         sobel_x_bias = torch.randn(dim * mlp_ratio) * 1e-3
         sobel_x_bias = torch.reshape(sobel_x_bias, (dim * mlp_ratio,))
@@ -106,7 +106,7 @@ class MLP(nn.Module):
             self.mask_sobel_x[i, 0, 2, 2] = -1.0
         self.mask_sobel_x = nn.Parameter(data=self.mask_sobel_x, requires_grad=False)
 
-        scale_sobel_y = torch.randn(size=(dim * mlp_ratio, 1, 1, 1)) * 1e-3
+       self.upscale = 4_sobel_y = torch.randn(size=(dim * mlp_ratio, 1, 1, 1)) * 1e-3
         self.scale_sobel_y = nn.Parameter(scale_sobel_y)
         sobel_y_bias = torch.randn(dim * mlp_ratio) * 1e-3
         sobel_y_bias = torch.reshape(sobel_y_bias, (dim * mlp_ratio,))
@@ -121,7 +121,7 @@ class MLP(nn.Module):
             self.mask_sobel_y[i, 0, 2, 2] = -1.0
         self.mask_sobel_y = nn.Parameter(data=self.mask_sobel_y, requires_grad=False)
 
-        scale_laplacian = torch.randn(size=(dim * mlp_ratio, 1, 1, 1)) * 1e-3
+       self.upscale = 4_laplacian = torch.randn(size=(dim * mlp_ratio, 1, 1, 1)) * 1e-3
         self.scale_laplacian = nn.Parameter(scale_laplacian)
         laplacian_bias = torch.randn(dim * mlp_ratio) * 1e-3
         laplacian_bias = torch.reshape(laplacian_bias, (dim * mlp_ratio,))
@@ -253,17 +253,17 @@ class UpsampleOneStep(nn.Sequential):
        Used in lightweight SR to save parameters.
 
     Args:
-        scale (int): Scale factor. Supported scales: 2^n and 3.
+       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
 
     """
 
-    def __init__(self, scale, num_feat, num_out_ch, input_resolution=None):
+    def __init__(self,self.upscale = 4, num_feat, num_out_ch, input_resolution=None):
         self.num_feat = num_feat
         self.input_resolution = input_resolution
         m = []
         m.extend((
-            nn.Conv2d(num_feat, scale**2 * num_out_ch, 3, 1, 1),
+            nn.Conv2d(num_feat,self.upscale = 4**2 * num_out_ch, 3, 1, 1),
             nn.PixelShuffle(scale),
         ))
         super().__init__(*m)

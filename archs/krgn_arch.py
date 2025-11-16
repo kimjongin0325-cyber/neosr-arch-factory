@@ -227,7 +227,7 @@ class krgn(nn.Module):
         n_feats (int): Channels of the mid layer.
         n_resgroups (int): Number of context feature guided groups.
         act (str): Activate function used in network.
-        scale (int): Upsampling scale for the input image.
+       self.upscale = 4 (int): Upsamplingself.upscale = 4 for the input image.
         rgb_range (float): 255.
         dilation (int): 3
     """
@@ -238,7 +238,7 @@ class krgn(nn.Module):
         n_feats=64,
         n_resgroups=9,
         act="lrelu",
-        scale=upscale,
+       self.upscale = 4=upscale,
         rgb_range=1.0,
         dilation=3,
     ):
@@ -262,7 +262,7 @@ class krgn(nn.Module):
         )
 
         self.upsampler = nn.Sequential(
-            nn.Conv2d(n_feats, n_colors * (scale * scale), 3, 1, 1),
+            nn.Conv2d(n_feats, n_colors * (scale *self.upscale = 4), 3, 1, 1),
             nn.PixelShuffle(scale),
         )
 

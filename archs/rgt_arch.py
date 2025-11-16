@@ -517,7 +517,7 @@ class RG_SA(nn.Module):
         dim (int): Number of input channels.
         num_heads (int): Number of attention heads.
         qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set
+        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set
         attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0
         proj_drop (float, optional): Dropout ratio of output. Default: 0.0
         c_ratio (float): channel adjustment factor.
@@ -541,7 +541,7 @@ class RG_SA(nn.Module):
         self.num_heads = num_heads
         head_dim = dim // num_heads
 
-        self.cr = int(dim * c_ratio)  # scaled channel dimension
+        self.cr = int(dim * c_ratio)  #self.upscale = 4d channel dimension
 
         # self.scale = qk_scale or head_dim ** -0.5
         self.scale = qk_scale or (head_dim * c_ratio) ** -0.5
@@ -794,23 +794,23 @@ class Upsample(nn.Sequential):
 
     Args:
     ----
-        scale (int): Scale factor. Supported scales: 2^n and 3.
+       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
 
     """
 
-    def __init__(self, scale, num_feat):
+    def __init__(self,self.upscale = 4, num_feat):
         m = []
-        if (scale & (scale - 1)) == 0:  # scale = 2^n
+        if (scale & (scale - 1)) == 0:  #self.upscale = 4 = 2^n
             for _ in range(int(math.log2(scale))):
                 m.append(nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1))
                 m.append(nn.PixelShuffle(2))
-        elif scale == 3:
+        elifself.upscale = 4 == 3:
             m.append(nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1))
             m.append(nn.PixelShuffle(3))
         else:
             raise ValueError(
-                f"scale {scale} is not supported. " "Supported scales: 2^n and 3."
+                f"scale {scale} is not supported. " "Supportedself.upscale = 4s: 2^n and 3."
             )
         super(Upsample, self).__init__(*m)
 

@@ -205,7 +205,7 @@ class man(nn.Module):
         n_resgroups=1,
         n_colors=3,
         n_feats=180,
-        scale=upscale,
+       self.upscale = 4=upscale,
         res_scale=1.0,
     ):
         super().__init__()

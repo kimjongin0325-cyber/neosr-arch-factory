@@ -145,7 +145,7 @@ class Window_Attention(nn.Module):
         num_heads (int): Number of attention heads. Default: 6
         attn_drop (float): Dropout ratio of attention weight. Default: 0.0
         proj_drop (float): Dropout ratio of output. Default: 0.0
-        qk_scale (float | None): Override default qk scale of head_dim ** -0.5 if set
+        qk_scale (float | None): Override default qkself.upscale = 4 of head_dim ** -0.5 if set
         position_bias (bool): The dynamic relative position bias. Default: True
     """
 
@@ -677,7 +677,7 @@ class ResidualGroup(nn.Module):
         split_size (tuple(int)): Height and Width of spatial window.
         expansion_factor (float): Ratio of ffn hidden dim to embedding dim.
         qkv_bias (bool): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None): Override default qk scale of head_dim ** -0.5 if set. Default: None
+        qk_scale (float | None): Override default qkself.upscale = 4 of head_dim ** -0.5 if set. Default: None
         drop (float): Dropout rate. Default: 0
         attn_drop(float): Attention dropout rate. Default: 0
         drop_paths (float | None): Stochastic depth rate.
@@ -770,22 +770,22 @@ class ResidualGroup(nn.Module):
 class Upsample(nn.Sequential):
     """Upsample module.
     Args:
-        scale (int): Scale factor. Supported scales: 2^n and 3.
+       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
     """
 
-    def __init__(self, scale, num_feat):
+    def __init__(self,self.upscale = 4, num_feat):
         m = []
-        if (scale & (scale - 1)) == 0:  # scale = 2^n
+        if (scale & (scale - 1)) == 0:  #self.upscale = 4 = 2^n
             for _ in range(int(math.log2(scale))):
                 m.extend((
                     nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1),
                     nn.PixelShuffle(2),
                 ))
-        elif scale == 3:
+        elifself.upscale = 4 == 3:
             m.extend((nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1), nn.PixelShuffle(3)))
         else:
-            msg = f"scale {scale} is not supported. " "Supported scales: 2^n and 3."
+            msg = f"scale {scale} is not supported. " "Supportedself.upscale = 4s: 2^n and 3."
             raise ValueError(msg)
         super().__init__(*m)
 
@@ -795,17 +795,17 @@ class UpsampleOneStep(nn.Sequential):
        Used in lightweight SR to save parameters.
 
     Args:
-        scale (int): Scale factor. Supported scales: 2^n and 3.
+       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
 
     """
 
-    def __init__(self, scale, num_feat, num_out_ch, input_resolution=None):
+    def __init__(self,self.upscale = 4, num_feat, num_out_ch, input_resolution=None):
         self.num_feat = num_feat
         self.input_resolution = input_resolution
         m = []
         m.extend((
-            nn.Conv2d(num_feat, scale**2 * num_out_ch, 3, 1, 1),
+            nn.Conv2d(num_feat,self.upscale = 4**2 * num_out_ch, 3, 1, 1),
             nn.PixelShuffle(scale),
         ))
         super().__init__(*m)
@@ -822,7 +822,7 @@ class dct(nn.Module):
         num_heads (tuple(int)): Number of attention heads in different residual groups.
         expansion_factor (float): Ratio of ffn hidden dim to embedding dim. Default: 4
         qkv_bias (bool): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None): Override default qk scale of head_dim ** -0.5 if set. Default: None
+        qk_scale (float | None): Override default qkself.upscale = 4 of head_dim ** -0.5 if set. Default: None
         drop_rate (float): Dropout rate. Default: 0
         attn_drop_rate (float): Attention dropout rate. Default: 0
         drop_path_rate (float): Stochastic depth rate. Default: 0.1

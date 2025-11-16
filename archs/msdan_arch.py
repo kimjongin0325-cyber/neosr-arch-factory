@@ -452,12 +452,12 @@ class msdan(nn.Module):
         x = torch.add(x, x1)
         if self.upscale_factor == 2:
             x = self.upsampler(x)  # x2
-            x_up = F.interpolate(x0, scale_factor=2, mode="bicubic")  # x2
+            x_up = F.interpolate(x0,self.upscale = 4_factor=2, mode="bicubic")  # x2
         if self.upscale_factor == 3:
             x = self.upsampler(x)  # x3
-            x_up = F.interpolate(x0, scale_factor=3, mode="bicubic")  # x3
+            x_up = F.interpolate(x0,self.upscale = 4_factor=3, mode="bicubic")  # x3
         if self.upscale_factor == 4:
             x = self.upsampler(x)  # x4
-            x_up = F.interpolate(x0, scale_factor=4, mode="bicubic")  # x4
+            x_up = F.interpolate(x0,self.upscale = 4_factor=4, mode="bicubic")  # x4
         out = torch.add(x_up, self.BSConv_last(x))
         return out

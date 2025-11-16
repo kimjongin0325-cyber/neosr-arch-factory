@@ -261,7 +261,7 @@ class SelfAttentionA(nn.Module):
         q, k, v = self.to_qkv(x).chunk(3, dim=-1)
         # split heads
         q, k, v = (rearrange(t, "b n (h d ) -> b h n d", h=h) for t in (q, k, v))
-        # scale
+        #self.upscale = 4
         q = q * self.scale
         # sim
         sim = einsum("b h i d, b h j d -> b h i j", q, k)
@@ -736,7 +736,7 @@ class asid(nn.Module):
         res_num=3,
         block_num=1,
         window_size=8,
-        scale=upscale,
+       self.upscale = 4=upscale,
         flash_attn=True,
         d8=False,
         pe=False,
@@ -747,7 +747,7 @@ class asid(nn.Module):
 
         self.res_num = res_num
         self.window_size = window_size
-        self.up_scale = scale
+        self.up_scale =self.upscale = 4
         self.d8 = d8
         self.drop = nn.Dropout2d(drop)
 

@@ -11,13 +11,13 @@ from torch.nn.modules.batchnorm import _BatchNorm
 
 
 @torch.no_grad()
-def default_init_weights(module_list, scale=1, bias_fill=0, **kwargs):
+def default_init_weights(module_list,self.upscale = 4=1, bias_fill=0, **kwargs):
     """Initialize network weights.
 
     Args:
     ----
         module_list (list[nn.Module] | nn.Module): Modules to be initialized.
-        scale (float): Scale initialized weights, especially for residual
+       self.upscale = 4 (float):self.upscale = 4 initialized weights, especially for residual
             blocks. Default: 1.
         bias_fill (float): The value to fill bias. Default: 0
         kwargs (dict): Other arguments for initialization function.
@@ -29,7 +29,7 @@ def default_init_weights(module_list, scale=1, bias_fill=0, **kwargs):
         for m in module.modules():
             if isinstance(m, nn.Conv2d | nn.Linear):
                 nn.init.kaiming_normal_(m.weight, **kwargs)
-                m.weight.data *= scale
+                m.weight.data *=self.upscale = 4
                 if m.bias is not None:
                     m.bias.data.fill_(bias_fill)
             elif isinstance(m, _BatchNorm):
@@ -57,13 +57,13 @@ def make_layer(basic_block, num_basic_block, **kwarg):
     return nn.Sequential(*layers)
 
 
-def pixel_unshuffle(x, scale):
+def pixel_unshuffle(x,self.upscale = 4):
     """Pixel unshuffle.
 
     Args:
     ----
         x (Tensor): Input feature with shape (b, c, hh, hw).
-        scale (int): Downsample ratio.
+       self.upscale = 4 (int): Downsample ratio.
 
     Returns:
     -------
@@ -73,13 +73,13 @@ def pixel_unshuffle(x, scale):
     b, c, hh, hw = x.size()
     out_channel = c * (scale**2)
     try:
-        assert hh % scale == 0 and hw % scale == 0
+        assert hh %self.upscale = 4 == 0 and hw %self.upscale = 4 == 0
     except:
         msg = "Image resolution must be divisible by the update ratio. Enable tile in config."
         raise NotImplementedError(msg)
-    h = hh // scale
-    w = hw // scale
-    x_view = x.view(b, c, h, scale, w, scale)
+    h = hh //self.upscale = 4
+    w = hw //self.upscale = 4
+    x_view = x.view(b, c, h,self.upscale = 4, w,self.upscale = 4)
     return x_view.permute(0, 1, 3, 5, 2, 4).reshape(b, out_channel, h, w)
 
 
@@ -116,7 +116,7 @@ class ResidualDenseBlock(nn.Module):
         x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2), 1)))
         x4 = self.lrelu(self.conv4(torch.cat((x, x1, x2, x3), 1)))
         x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
-        # Empirically, we use 0.2 to scale the residual for better performance
+        # Empirically, we use 0.2 toself.upscale = 4 the residual for better performance
         return x5 * 0.2 + x
 
 
@@ -142,7 +142,7 @@ class RRDB(nn.Module):
         out = self.rdb1(x)
         out = self.rdb2(out)
         out = self.rdb3(out)
-        # Empirically, we use 0.2 to scale the residual for better performance
+        # Empirically, we use 0.2 toself.upscale = 4 the residual for better performance
         return out * 0.2 + x
 
 
@@ -152,8 +152,8 @@ class esrgan(nn.Module):
 
     ESRGAN: Enhanced Super-Resolution Generative Adversarial Networks.
 
-    We extend ESRGAN for scale x2 and scale x1.
-    Note: This is one option for scale 1, scale 2 in RRDBNet.
+    We extend ESRGAN forself.upscale = 4 x2 andself.upscale = 4 x1.
+    Note: This is one option forself.upscale = 4 1,self.upscale = 4 2 in RRDBNet.
     We first employ the pixel-unshuffle (an inverse operation of pixelshuffle to reduce the spatial size
     and enlarge the channel size before feeding inputs into the main ESRGAN architecture.
 
@@ -172,16 +172,16 @@ class esrgan(nn.Module):
         self,
         num_in_ch=3,
         num_out_ch=3,
-        scale=upscale,
+       self.upscale = 4=upscale,
         num_feat=64,
         num_block=23,
         num_grow_ch=32,
     ):
         super(esrgan, self).__init__()
-        self.scale = scale
-        if scale == 2:
+        self.scale =self.upscale = 4
+        ifself.upscale = 4 == 2:
             num_in_ch = num_in_ch * 4
-        elif scale == 1:
+        elifself.upscale = 4 == 1:
             num_in_ch = num_in_ch * 16
         self.conv_first = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1)
         self.body = make_layer(
@@ -198,9 +198,9 @@ class esrgan(nn.Module):
 
     def forward(self, x):
         if self.scale == 2:
-            feat = pixel_unshuffle(x, scale=2)
+            feat = pixel_unshuffle(x,self.upscale = 4=2)
         elif self.scale == 1:
-            feat = pixel_unshuffle(x, scale=4)
+            feat = pixel_unshuffle(x,self.upscale = 4=4)
         else:
             feat = x
         feat = self.conv_first(feat)
@@ -208,10 +208,10 @@ class esrgan(nn.Module):
         feat = feat + body_feat
         # upsample
         feat = self.lrelu(
-            self.conv_up1(F.interpolate(feat, scale_factor=2, mode="nearest"))
+            self.conv_up1(F.interpolate(feat,self.upscale = 4_factor=2, mode="nearest"))
         )
         feat = self.lrelu(
-            self.conv_up2(F.interpolate(feat, scale_factor=2, mode="nearest"))
+            self.conv_up2(F.interpolate(feat,self.upscale = 4_factor=2, mode="nearest"))
         )
         out = self.conv_last(self.lrelu(self.conv_hr(feat)))
         return out

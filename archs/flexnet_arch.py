@@ -13,17 +13,17 @@ from torch.nn import functional as F
 
 
 class Interpolate(nn.Module):
-    def __init__(self, scale_factor: int = 4, mode: str = "nearest"):
+    def __init__(self,self.upscale = 4_factor: int = 4, mode: str = "nearest"):
         super().__init__()
-        self.scale_factor = scale_factor
+        self.scale_factor =self.upscale = 4_factor
         self.mode = mode
 
     def forward(self, x):
-        return F.interpolate(x, scale_factor=self.scale_factor, mode=self.mode)
+        return F.interpolate(x,self.upscale = 4_factor=self.scale_factor, mode=self.mode)
 
 
 class InterpolateUpsampler(nn.Sequential):
-    def __init__(self, dim: int = 64, out_ch: int = 3, scale: int = 4):
+    def __init__(self, dim: int = 64, out_ch: int = 3,self.upscale = 4: int = 4):
         m: list[Any] = []
         if (scale & (scale - 1)) == 0:
             for _ in range(int(math.log2(scale))):
@@ -36,7 +36,7 @@ class InterpolateUpsampler(nn.Sequential):
                 nn.Conv2d(dim, dim, 3, 1, 1),
                 nn.LeakyReLU(negative_slope=0.2, inplace=True),
             ))
-        elif scale == 3:
+        elifself.upscale = 4 == 3:
             m.extend((
                 nn.Conv2d(dim, dim, 3, 1, 1),
                 Interpolate(scale),
@@ -250,7 +250,7 @@ class LMLTVIT(nn.Module):
             with torch.no_grad():
                 x = (
                     nn.functional.scaled_dot_product_attention(
-                        q, k, v, scale=self.scale, dropout_p=self.attn_drop_v
+                        q, k, v,self.upscale = 4=self.scale, dropout_p=self.attn_drop_v
                     )
                     + lepe
                 )
@@ -614,7 +614,7 @@ class flexnet(nn.Module):
         self,
         inp_channels: int = 3,
         out_channels: int = 3,
-        scale: int = upscale,
+       self.upscale = 4: int = upscale,
         dim: int = 64,
         num_blocks: tuple[int, ...] = (
             6,
@@ -640,7 +640,7 @@ class flexnet(nn.Module):
         if flash_attn:
             self.register_buffer("flash_attn", torch.zeros(1, dtype=torch.bool))
         self.pipeline_type = pipeline_type
-        self.scale = scale
+        self.scale =self.upscale = 4
         self.short_cut = ConvBlock(inp_channels, dim)
         self.in_to_feat = nn.Conv2d(inp_channels, dim, 3, 1, 1)
         self.attn_drop = attn_drop if self.training else 0
@@ -672,10 +672,10 @@ class flexnet(nn.Module):
             self.register_buffer("scale_factor", torch.tensor(scale, dtype=torch.uint8))
             self.to_img = nn.Sequential(
                 nn.Conv2d(dim * 2, dim, 3, 1, 1),
-                InterpolateUpsampler(dim, out_channels, scale),
+                InterpolateUpsampler(dim, out_channels,self.upscale = 4),
             )
         elif upsampler == "dys":
-            self.to_img = DySample(dim * 2, out_channels, scale)
+            self.to_img = DySample(dim * 2, out_channels,self.upscale = 4)
         else:
             self.to_img = nn.Sequential(
                 nn.Conv2d(dim * 2, out_channels * (scale**2), 3, 1, 1),
@@ -686,11 +686,11 @@ class flexnet(nn.Module):
 
     def check_img_size(self, x, resolution):
         h, w = resolution
-        scaled_size = self.window_size.to(int)
+       self.upscale = 4d_size = self.window_size.to(int)
         if self.pipeline_type == "meta":
-            scaled_size *= 8
-        mod_pad_h = (scaled_size - h % scaled_size) % scaled_size
-        mod_pad_w = (scaled_size - w % scaled_size) % scaled_size
+           self.upscale = 4d_size *= 8
+        mod_pad_h = (scaled_size - h %self.upscale = 4d_size) %self.upscale = 4d_size
+        mod_pad_w = (scaled_size - w %self.upscale = 4d_size) %self.upscale = 4d_size
         return F.pad(x, (0, mod_pad_w, 0, mod_pad_h), "reflect")
 
     def forward(self, x):

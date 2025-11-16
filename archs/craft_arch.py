@@ -118,7 +118,7 @@ class Attention_regular(nn.Module):
         split_size (tuple(int)): Height and Width of the regular rectangle window (regular-Rwin).
         dim_out (int | None): The dimension of the attention output. Default: None
         num_heads (int): Number of attention heads. Default: 6
-        qk_scale (float | None): Override default qk scale of head_dim ** -0.5 if set
+        qk_scale (float | None): Override default qkself.upscale = 4 of head_dim ** -0.5 if set
         position_bias (bool): The dynamic relative position bias. Default: True
 
     """
@@ -188,7 +188,7 @@ class Attention_regular(nn.Module):
         if self.flash_attn is True:
             # flash attention
             x = F.scaled_dot_product_attention(
-                q, k, v, attn_mask=mask, scale=self.scale
+                q, k, v, attn_mask=mask,self.upscale = 4=self.scale
             )
             x = x.transpose(1, 2).reshape(-1, self.H_sp * self.W_sp, C)
         else:
@@ -239,7 +239,7 @@ class SRWAB(nn.Module):
         shift_size (int): Shift size for SW-MSA.
         mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
         qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.
+        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set.
         act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
         norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
 
@@ -609,7 +609,7 @@ class CRFB(nn.Module):
         num_heads (int): Number of attention heads.
         mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
         qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.
+        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set.
         norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
 
     """
@@ -691,7 +691,7 @@ class RCRFG(nn.Module):
         num_heads (int): Number of attention heads.
         mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
         qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.
+        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set.
         norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
         resi_connection: The convolutional block before residual connection.
 
@@ -740,15 +740,15 @@ class UpsampleOneStep(nn.Sequential):
 
     Args:
     ----
-        scale (int): Scale factor. Supported scales: 2^n and 3.
+       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
 
     """
 
-    def __init__(self, scale, num_feat, num_out_ch, input_resolution=None):
+    def __init__(self,self.upscale = 4, num_feat, num_out_ch, input_resolution=None):
         self.num_feat = num_feat
         self.input_resolution = input_resolution
-        self.scale = scale
+        self.scale =self.upscale = 4
         m = []
         m.append(nn.Conv2d(num_feat, (scale**2) * num_out_ch, 3, 1, 1))
         m.append(nn.PixelShuffle(scale))
@@ -767,7 +767,7 @@ class craft(nn.Module):
         num_heads (tuple(int)): Number of attention heads in different layers.
         mlp_ratio (float): Ratio of mlp hidden dim to embedding dim. Default: 2
         qkv_bias (bool): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float): Override default qk scale of head_dim ** -0.5 if set. Default: None
+        qk_scale (float): Override default qkself.upscale = 4 of head_dim ** -0.5 if set. Default: None
         norm_layer (nn.Module): Normalization layer. Default: nn.LayerNorm.
         upscale: Upscale factor. 2/3/4/
         img_range: Image range. 1. or 255.

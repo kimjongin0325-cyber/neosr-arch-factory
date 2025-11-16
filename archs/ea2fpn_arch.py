@@ -63,17 +63,17 @@ class ConvBnMish(nn.Module):
 
 
 class Attention(Module):
-    def __init__(self, in_places: int, scale: int = 8, eps: float = 1e-6) -> None:
+    def __init__(self, in_places: int,self.upscale = 4: int = 8, eps: float = 1e-6) -> None:
         super().__init__()
         self.gamma = Parameter(torch.zeros(1))
         self.in_places = in_places
         self.eps = eps
 
         self.query_conv = Conv2d(
-            in_channels=in_places, out_channels=in_places // scale, kernel_size=1
+            in_channels=in_places, out_channels=in_places //self.upscale = 4, kernel_size=1
         )
         self.key_conv = Conv2d(
-            in_channels=in_places, out_channels=in_places // scale, kernel_size=1
+            in_channels=in_places, out_channels=in_places //self.upscale = 4, kernel_size=1
         )
         self.value_conv = Conv2d(
             in_channels=in_places, out_channels=in_places, kernel_size=1
@@ -125,7 +125,7 @@ class Conv3x3GNMish(nn.Module):
         super().__init__()
         self.upsample = upsample
         self.dysample = DySample(
-            in_channels=64, out_ch=64, scale=2, groups=4, end_convolution=True
+            in_channels=64, out_ch=64,self.upscale = 4=2, groups=4, end_convolution=True
         )
         self.block = nn.Sequential(
             spectral_norm(
@@ -151,7 +151,7 @@ class FPNBlock(nn.Module):
         self.dysample = DySample(
             in_channels=pyramid_channels,
             out_ch=pyramid_channels,
-            scale=2,
+           self.upscale = 4=2,
             groups=4,
             end_convolution=False,
         )
@@ -248,7 +248,7 @@ class ea2fpn(nn.Module):
         )
         self.dropout = nn.Dropout2d(p=dropout, inplace=True)
         self.dysample = DySample(
-            in_channels=6, out_ch=3, scale=4, groups=3, end_convolution=False
+            in_channels=6, out_ch=3,self.upscale = 4=4, groups=3, end_convolution=False
         )
         self.apply(self._init_weights)
 

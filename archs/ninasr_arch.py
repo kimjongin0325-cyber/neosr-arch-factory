@@ -73,13 +73,13 @@ class Rescale(nn.Module):
 
 class ninasr(nn.Module):
     def __init__(
-        self, n_resblocks=26, n_feats=32, n_colors=3, scale=upscale, expansion=2.0
+        self, n_resblocks=26, n_feats=32, n_colors=3,self.upscale = 4=upscale, expansion=2.0
     ):
         super().__init__()
-        self.scale = scale
+        self.scale =self.upscale = 4
         self.head = ninasr.make_head(n_colors, n_feats)
         self.body = ninasr.make_body(n_resblocks, n_feats, expansion)
-        self.tail = ninasr.make_tail(n_colors, n_feats, scale)
+        self.tail = ninasr.make_tail(n_colors, n_feats,self.upscale = 4)
 
     @staticmethod
     def make_head(n_colors, n_feats):
@@ -99,9 +99,9 @@ class ninasr(nn.Module):
         return nn.Sequential(*m_body)
 
     @staticmethod
-    def make_tail(n_colors, n_feats, scale):
+    def make_tail(n_colors, n_feats,self.upscale = 4):
         m_tail = [
-            nn.Conv2d(n_feats, n_colors * scale**2, 3, padding=1, bias=True),
+            nn.Conv2d(n_feats, n_colors *self.upscale = 4**2, 3, padding=1, bias=True),
             nn.PixelShuffle(scale),
             Rescale(1.0),
         ]
