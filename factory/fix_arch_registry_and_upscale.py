@@ -26,7 +26,7 @@ def patch_file(path):
 
     # upscale needed? → global default 삽입
     if has_upscale_global:
-        new_lines.insert(0, "upscale = 4  # auto-added by arch factory\n")
+        new_lines.insert(0, "# upscale = 4  # auto-added by arch factory\n")
 
     with open(path, "w", encoding="utf-8") as f:
         f.writelines(new_lines)
