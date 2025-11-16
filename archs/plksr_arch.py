@@ -1,5 +1,5 @@
 # from registry import ARCH_REGISTRY
-# upscale = 4  # auto-added by arch factory
+upscale = 4  # auto-added by arch factory (복구)
 # from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3
 # type: ignore
 from collections.abc import Sequence
@@ -10,8 +10,6 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.init import trunc_normal_
-
-
 
 
 def repeat_interleave(x, n):
