@@ -881,7 +881,7 @@ class dct(nn.Module):
             self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1)
         else:
             self.mean = torch.zeros(1, 1, 1, 1)
-        self.upscale = upscale
+        self.upscale = 4
         self.upsampler = upsampler
 
         # ------------------------- 1, Shallow Feature Extraction ------------------------- #

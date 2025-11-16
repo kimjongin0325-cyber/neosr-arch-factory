@@ -964,7 +964,7 @@ class atd(nn.Module):
         else:
             self.mean = torch.zeros(1, 1, 1, 1)
 
-        self.upscale = upscale
+        self.upscale = 4
         self.upsampler = upsampler
 
         # ------------------------- 1, shallow feature extraction ------------------------- #

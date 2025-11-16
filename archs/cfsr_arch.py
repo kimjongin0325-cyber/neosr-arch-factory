@@ -305,7 +305,7 @@ class cfsr(nn.Module):
         else:
             pass
 
-        self.upscale = upscale
+        self.upscale = 4
         self.upsampler = upsampler
         self.num_layers = len(depths)
 

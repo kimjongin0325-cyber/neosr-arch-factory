@@ -820,7 +820,7 @@ class craft(nn.Module):
             self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1)
         else:
             self.mean = torch.zeros(1, 1, 1, 1)
-        self.upscale = upscale
+        self.upscale = 4
 
         # relative position index
         self.calculate_rpi_v_sa()

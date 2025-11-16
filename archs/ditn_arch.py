@@ -304,7 +304,7 @@ class ditn(nn.Module):
         self.upsample = UpsampleOneStep(upscale, dim, 3)
         self.dim = dim
         self.patch_sizes = [8, 8]
-        self.scale = upscale
+        self.scale = 4
         self.SAL_blocks = SAL_blocks
         self.ITL_blocks = ITL_blocks
 

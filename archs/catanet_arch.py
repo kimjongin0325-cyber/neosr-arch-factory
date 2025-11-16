@@ -441,7 +441,7 @@ class catanet(nn.Module):
         self.patch_size = patch_size
         self.qk_dim = qk_dim
         self.mlp_dim = mlp_dim
-        self.upscale = upscale
+        self.upscale = 4
         self.heads = heads
         self.n_iters = n_iters
         self.num_tokens = num_tokens
