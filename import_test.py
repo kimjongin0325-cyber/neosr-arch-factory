@@ -1,32 +1,21 @@
-import os
-import sys
+import os, sys
 
-# 현재 파일(import_test.py)이 위치한 디렉토리를 BASE 로 사용
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = "/content/neosr-arch-factory"
 ARCH_DIR = os.path.join(BASE, "archs")
 
-# PYTHONPATH 등록
+# registry.py 와 arch/*.py 들을 최상위 모듈로 취급
 if BASE not in sys.path:
     sys.path.append(BASE)
 if ARCH_DIR not in sys.path:
     sys.path.append(ARCH_DIR)
 
-print("=== IMPORT TEST START ===")
+from registry import ARCH_REGISTRY
 
-# archs 폴더 내부의 모든 .py 파일 스캔
+ARCH_REGISTRY._dict.clear()
+
 for file in os.listdir(ARCH_DIR):
-    if not file.endswith(".py"):
-        continue
-
-    module_name = file.replace(".py", "")
-    print(f"{file:<20}", end=" ")
-
-    try:
+    if file.endswith(".py") and file != "__init__.py":
+        module_name = file[:-3]
         __import__(module_name)
-        print("✔ OK")
-    except Exception as e:
-        print("❌ FAILED")
-        msg = str(e).split("\n")[0]
-        print("   └─", msg)
 
-print("=== IMPORT TEST END ===")
+print(ARCH_REGISTRY._dict.keys())
