@@ -736,7 +736,7 @@ class asid(nn.Module):
         res_num=3,
         block_num=1,
         window_size=8,
-       self.upscale = 4=upscale,
+       self.upscale = 4,
         flash_attn=True,
         d8=False,
         pe=False,
