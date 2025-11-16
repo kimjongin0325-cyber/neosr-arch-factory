@@ -1,22 +1,24 @@
-import os, sys
+class Registry:
+    def __init__(self):
+        self._dict = {}
 
-BASE = "/content/neosr-arch-factory"
-ARCH_DIR = os.path.join(BASE, "archs")
+    def register(self, name=None):
+        def decorator(obj):
+            key = name if name else obj.__name__
+            self._dict[key] = obj
+            self._dict[key.lower()] = obj
+            self._dict[key.upper()] = obj
+            return obj
+        return decorator
 
-if BASE not in sys.path:
-    sys.path.append(BASE)
-if ARCH_DIR not in sys.path:
-    sys.path.append(ARCH_DIR)
+    def get(self, name):
+        if name in self._dict:
+            return self._dict[name]
+        if name.lower() in self._dict:
+            return self._dict[name.lower()]
+        if name.upper() in self._dict:
+            return self._dict[name.upper()]
+        raise KeyError(f"{name} not found in registry")
 
-from registry import ARCH_REGISTRY
 
-# registry 초기화
-ARCH_REGISTRY._dict.clear()
-
-# arch 파일 import
-for file in os.listdir(ARCH_DIR):
-    if file.endswith(".py") and file != "__init__.py":
-        module_name = file[:-3]
-        __import__(module_name)
-
-print("Loaded Models:", list(ARCH_REGISTRY._dict.keys()))
+ARCH_REGISTRY = Registry()
