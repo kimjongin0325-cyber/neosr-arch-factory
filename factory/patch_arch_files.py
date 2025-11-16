@@ -47,7 +47,7 @@ def patch_arch_file(path):
         new_lines.append(line)
 
     # 8) 맨 위에 local_utils import 삽입
-    import_header = "from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3\n"
+    import_header = "# from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3\n"
     if import_header not in new_lines[0]:
         new_lines.insert(0, import_header)
 

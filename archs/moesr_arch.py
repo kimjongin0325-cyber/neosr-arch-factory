@@ -1,6 +1,6 @@
 # from registry import ARCH_REGISTRY
 # upscale = 4  # auto-added by arch factory
-from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3
+# from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3
 import math
 from typing import Literal
 

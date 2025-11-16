@@ -1,5 +1,5 @@
 # from registry import ARCH_REGISTRY
-from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3
+# from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3
 # type: ignore
 from torch import Tensor, nn
 from torch.nn.utils import spectral_norm
