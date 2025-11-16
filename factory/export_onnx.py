@@ -1,86 +1,112 @@
-import os
-import sys
-import importlib.util
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import torch
-import traceback
+import argparse
+from registry import ARCH_REGISTRY
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
 
-DIST = os.path.join(ROOT, "dist")
-ONNX_DIR = os.path.join(ROOT, "onnx")
-os.makedirs(ONNX_DIR, exist_ok=True)
+# --------------------------------------------------------
+# 1) 모델이 가진 window, patch, upscale 그대로 읽기
+# --------------------------------------------------------
+def get_model_constraints(model):
+    # window_size
+    if hasattr(model, "window_size"):
+        window = int(model.window_size)
+    elif hasattr(model, "window"):
+        window = int(model.window)
+    else:
+        window = 1  # fallback (거의 없음)
 
-def extract_class(module):
-    """arch.py 내부에서 nn.Module 클래스를 자동으로 찾는다."""
-    import torch.nn as nn
-    for name, obj in module.__dict__.items():
-        try:
-            if isinstance(obj, type) and issubclass(obj, nn.Module):
-                return name, obj
-        except:
-            pass
-    return None, None
+    # patch size
+    if hasattr(model, "patch_size"):
+        patch = int(model.patch_size)
+    elif hasattr(model, "patch"):
+        patch = int(model.patch)
+    else:
+        patch = 1
 
-def export_single_arch(path, filename):
-    modname = filename.replace(".py", "")
+    # upscale
+    upscale = getattr(model, "upscale", 1)
 
-    try:
-        # module load
-        spec = importlib.util.spec_from_file_location(modname, path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+    return {
+        "window": window,
+        "patch": patch,
+        "upscale": upscale,
+    }
 
-        # class 찾기
-        cls_name, cls_obj = extract_class(module)
-        if cls_obj is None:
-            print(f"❌ NO MODEL CLASS: {filename}")
-            return False
 
-        print(f"[INFO] Exporting {cls_name} from {filename}")
+# --------------------------------------------------------
+# 2) 입력 크기를 자동으로 윈도우/패치에 맞게 정렬
+# --------------------------------------------------------
+def auto_align_size(model_constraints, size):
+    w = model_constraints["window"]
+    p = model_constraints["patch"]
 
-        # 모델 생성
-        try:
-            model = cls_obj().eval()
-        except Exception as e:
-            print(f"❌ INIT FAIL: {filename} — {e}")
-            return False
+    # patch, window 모두 고려한 최소 단위
+    base = max(w, p)
 
-        # 기본 dummy input
-        dummy = torch.randn(1, 3, 256, 256)
+    # size를 base 배수로 정렬
+    aligned = ((size + base - 1) // base) * base
+    return aligned
 
-        outpath = os.path.join(ONNX_DIR, f"{cls_name}.onnx")
 
-        # ONNX export
-        torch.onnx.export(
-            model,
-            dummy,
-            outpath,
-            opset_version=17,
-            input_names=["input"],
-            output_names=["output"],
-            dynamic_axes={
-                "input": {0: "N", 2: "H", 3: "W"},
-                "output": {0: "N", 2: "H", 3: "W"}
-            }
-        )
+# --------------------------------------------------------
+# 3) 더미 입력 자동 생성 (각 모델별 구조를 따름)
+# --------------------------------------------------------
+def make_dummy_input(model, user_size):
+    rules = get_model_constraints(model)
 
-        print(f"✔ ONNX SAVED: {outpath}")
-        return True
+    # 모델이 요구하는 최소 단위에 맞게 자동 정렬
+    h = auto_align_size(rules, user_size)
+    w = auto_align_size(rules, user_size)
 
-    except Exception as e:
-        print(f"❌ EXPORT FAIL: {filename}")
-        traceback.print_exc()
-        return False
+    print(f"\n🔹 Dummy Input 자동 조정됨: {h} × {w}")
+    print(f"   (window={rules['window']}, patch={rules['patch']}, upscale={rules['upscale']})")
 
-def main():
-    print("[INFO] ONNX 변환 시작")
-    for fname in sorted(os.listdir(DIST)):
-        if fname.endswith("_arch.py"):
-            export_single_arch(os.path.join(DIST, fname), fname)
+    return torch.randn(1, 3, h, w).to(next(model.parameters()).device)
 
-    print("\n[INFO] 변환 완료!")
 
+# --------------------------------------------------------
+# 4) ONNX EXPORT
+# --------------------------------------------------------
+def export_onnx(model_name, output_path, input_size, opset):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    print(f"\n=== MODEL LOAD: {model_name} ===")
+    model = ARCH_REGISTRY.get(model_name)().to(device)
+    model.eval()
+
+    # dummy input 자동 계산
+    dummy = make_dummy_input(model, input_size)
+
+    print("\n=== Exporting ONNX ===")
+    torch.onnx.export(
+        model,
+        dummy,
+        output_path,
+        verbose=False,
+        opset_version=opset,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_axes={
+            "input": {2: "h", 3: "w"},
+            "output": {2: "H", 3: "W"},
+        },
+    )
+
+    print(f"\n🎉 Export 완료: {output_path}\n")
+
+
+# --------------------------------------------------------
+# 5) CLI
+# --------------------------------------------------------
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, required=True, help="모델 이름 (예: ATD)")
+    parser.add_argument("--output", type=str, default="model.onnx")
+    parser.add_argument("--size", type=int, default=128, help="입력 크기(자동 정렬됨)")
+    parser.add_argument("--opset", type=int, default=17)
+    args = parser.parse_args()
+
+    export_onnx(args.model, args.output, args.size, args.opset)
