@@ -2,8 +2,8 @@
 # upscale = 4  # auto-added by arch factory
 # from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3
 # type: ignore
-import math
 
+import math
 import numpy as np
 import torch
 from torch import nn
@@ -11,9 +11,18 @@ from torch.nn import functional as F
 from torch.nn.init import trunc_normal_
 
 
+# -------------------------------------------------------------------------
+# local helper (외부 의존성 끊었으므로 여기서 정의)
+# -------------------------------------------------------------------------
+def to_2tuple(x):
+    if isinstance(x, tuple):
+        return x
+    return (x, x)
 
 
+# -------------------------------------------------------------------------
 # Shuffle operation for Categorization and UnCategorization operations.
+# -------------------------------------------------------------------------
 def index_reverse(index):
     index_r = torch.zeros_like(index)
     ind = torch.arange(0, index.shape[-1]).to(index.device)
@@ -36,6 +45,9 @@ def feature_shuffle(x, index):
     return shuffled_x
 
 
+# -------------------------------------------------------------------------
+# basic building blocks
+# -------------------------------------------------------------------------
 class dwconv(nn.Module):
     def __init__(self, hidden_features, kernel_size=5):
         super(dwconv, self).__init__()
@@ -89,6 +101,9 @@ class ConvFFN(nn.Module):
         return x
 
 
+# -------------------------------------------------------------------------
+# window ops
+# -------------------------------------------------------------------------
 def window_partition(x, window_size):
     """Args:
     ----
@@ -98,7 +113,6 @@ def window_partition(x, window_size):
     Returns
     -------
         windows: (num_windows*b, window_size, window_size, c)
-
     """
     b, h, w, c = x.shape
     x = x.view(b, h // window_size, window_size, w // window_size, window_size, c)
@@ -119,7 +133,6 @@ def window_reverse(windows, window_size, h, w):
     Returns
     -------
         x: (b, h, w, c)
-
     """
     b = int(windows.shape[0] / (h * w / window_size / window_size))
     x = windows.view(
@@ -129,17 +142,11 @@ def window_reverse(windows, window_size, h, w):
     return x
 
 
+# -------------------------------------------------------------------------
+# attention modules
+# -------------------------------------------------------------------------
 class WindowAttention(nn.Module):
-    r"""Shifted Window-based Multi-head Self-Attention
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        window_size (tuple[int]): The height and width of the window.
-        num_heads (int): Number of attention heads.
-        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
-
-    """
+    r"""Shifted Window-based Multi-head Self-Attention"""
 
     def __init__(self, dim, window_size, num_heads, qkv_bias=True):
         super().__init__()
@@ -152,7 +159,9 @@ class WindowAttention(nn.Module):
 
         # define a parameter table of relative position bias
         self.relative_position_bias_table = nn.Parameter(
-            torch.zeros((2 * window_size[0] - 1) * (2 * window_size[1] - 1), num_heads)
+            torch.zeros(
+                (2 * window_size[0] - 1) * (2 * window_size[1] - 1), num_heads
+            )
         )  # 2*Wh-1 * 2*Ww-1, nH
 
         self.proj = nn.Linear(dim, dim)
@@ -161,23 +170,18 @@ class WindowAttention(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, qkv, rpi, mask=None):
-        r"""Args:
+        """Args:
         ----
             qkv: Input query, key, and value tokens with shape of (num_windows*b, n, c*3)
             rpi: Relative position index
             mask (0/-inf):  Mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
-
         """
         b_, n, c3 = qkv.shape
         c = c3 // 3
         qkv = qkv.reshape(b_, n, 3, self.num_heads, c // self.num_heads).permute(
             2, 0, 3, 1, 4
         )
-        q, k, v = (
-            qkv[0],
-            qkv[1],
-            qkv[2],
-        )  # make torchscript happy (cannot use tensor as tuple)
+        q, k, v = qkv[0], qkv[1], qkv[2]
 
         q = q * self.scale
         attn = q @ k.transpose(-2, -1)
@@ -208,17 +212,7 @@ class WindowAttention(nn.Module):
 
 
 class ATD_CA(nn.Module):
-    r"""Adaptive Token Dictionary Cross-Attention.
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        num_tokens (int): Number of tokens in external token dictionary. Default: 64
-        reducted_dim (int, optional): Reducted dimension number for query and key matrix. Default: 4
-        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
-
-    """
+    r"""Adaptive Token Dictionary Cross-Attention."""
 
     def __init__(
         self, dim, input_resolution, num_tokens=64, reducted_dim=10, qkv_bias=True
@@ -240,31 +234,31 @@ class ATD_CA(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, td, x_size):
-        r"""Args:
+        """Args:
         ----
             x: input features with shape of (b, n, c)
-            td: token dicitionary with shape of (b, m, c)
+            td: token dictionary with shape of (b, m, c)
             x_size: size of the input x (h, w)
-
         """
         h, w = x_size
         b, n, c = x.shape
         b, m, c = td.shape
-        rc = self.rc
+        _ = (h, w)  # only to silence unused warning
 
-        # Q: b, n, c
+        # Q: b, n, rc
         q = self.wq(x)
-        # K: b, m, c
+        # K: b, m, rc
         k = self.wk(td)
         # V: b, m, c
         v = self.wv(td)
 
-        # Q @ K^T
-        attn = F.normalize(q, dim=-1) @ F.normalize(k, dim=-1).transpose(
-            -2, -1
-        )  # b, n, n_tk
-       self.upscale = 4 = torch.clamp(self.scale, 0, 1)
-        attn = attn * (1 +self.upscale = 4 * np.log(self.num_tokens))
+        # normalized dot product attention (b, n, m)
+        attn = F.normalize(q, dim=-1) @ F.normalize(k, dim=-1).transpose(-2, -1)
+
+        # learnable scale (clamped to [0,1])
+        scale = torch.clamp(self.scale, 0, 1)
+        attn = attn * (1 + scale * np.log(self.num_tokens))
+
         attn = self.softmax(attn)
 
         # Attn * V
@@ -274,18 +268,7 @@ class ATD_CA(nn.Module):
 
 
 class AC_MSA(nn.Module):
-    r"""Adaptive Category-based Multihead Self-Attention.
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        num_tokens (int): Number of tokens in external dictionary. Default: 64
-        num_heads (int): Number of attention heads. Default: 4
-        category_size (int): Number of tokens in each group for global sparse attention. Default: 128
-        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
-
-    """
+    r"""Adaptive Category-based Multihead Self-Attention."""
 
     def __init__(
         self,
@@ -303,7 +286,6 @@ class AC_MSA(nn.Module):
         self.num_heads = num_heads
         self.category_size = category_size
 
-        # self.wqkv = nn.Linear(dim, 3 * dim, bias=qkv_bias)
         self.proj = nn.Linear(dim, dim, bias=qkv_bias)
 
         self.logit_scale = nn.Parameter(
@@ -314,15 +296,16 @@ class AC_MSA(nn.Module):
     def forward(self, qkv, sim, x_size):
         """Args:
         ----
-            x: input features with shape of (b, HW, c)
-            mask: similarity map with shape of (b, HW, m)
+            qkv: (b, HW, 3c)
+            sim: similarity map with shape of (b, HW, m)
             x_size: size of the input x
-
         """
         H, W = x_size
         b, n, c3 = qkv.shape
         c = c3 // 3
         b, n, m = sim.shape
+        _ = (H, W, m)  # silence unused
+
         gs = min(n, self.category_size)  # group size
         ng = (n + gs - 1) // gs
 
@@ -330,13 +313,17 @@ class AC_MSA(nn.Module):
         tk_id = torch.argmax(sim, dim=-1, keepdim=False)
         # sort features by type
         x_sort_values, x_sort_indices = torch.sort(tk_id, dim=-1, stable=False)
+        del x_sort_values
         x_sort_indices_reverse = index_reverse(x_sort_indices)
         shuffled_qkv = feature_shuffle(qkv, x_sort_indices)  # b, n, c3
+
         pad_n = ng * gs - n
-        paded_qkv = torch.cat(
-            (shuffled_qkv, torch.flip(shuffled_qkv[:, n - pad_n : n, :], dims=[1])),
-            dim=1,
-        )
+        if pad_n > 0:
+            pad_part = torch.flip(shuffled_qkv[:, n - pad_n : n, :], dims=[1])
+            paded_qkv = torch.cat((shuffled_qkv, pad_part), dim=1)
+        else:
+            paded_qkv = shuffled_qkv
+
         y = paded_qkv.reshape(b, -1, gs, c3)
 
         qkv = y.reshape(b, ng, gs, 3, self.num_heads, c // self.num_heads).permute(
@@ -348,7 +335,8 @@ class AC_MSA(nn.Module):
         attn = q @ k.transpose(-2, -1)  # b, ng, nh, gs, gs
 
         logit_scale = torch.clamp(
-            self.logit_scale, max=torch.log(torch.tensor(1.0 / 0.01)).to(qkv.device)
+            self.logit_scale,
+            max=torch.log(torch.tensor(1.0 / 0.01)).to(qkv.device),
         ).exp()
         attn = attn * logit_scale
 
@@ -364,28 +352,11 @@ class AC_MSA(nn.Module):
         return x
 
 
+# -------------------------------------------------------------------------
+# ATD Transformer Layer / Blocks
+# -------------------------------------------------------------------------
 class ATDTransformerLayer(nn.Module):
-    r"""ATD Transformer Layer
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        idx (int): Layer index.
-        input_resolution (tuple[int]): Input resolution.
-        num_heads (int): Number of attention heads.
-        window_size (int): Window size.
-        shift_size (int): Shift size for SW-MSA.
-        category_size (int): Category size for AC-MSA.
-        num_tokens (int): Token number for each token dictionary.
-        reducted_dim (int): Reducted dimension number for query and key matrix.
-        convffn_kernel_size (int): Convolutional kernel size for ConvFFN.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
-        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
-        is_last (bool): True if this layer is the last of a ATD Block. Default: False
-
-    """
+    r"""ATD Transformer Layer"""
 
     def __init__(
         self,
@@ -471,7 +442,7 @@ class ATDTransformerLayer(nn.Module):
         # ATD_CA
         x_atd, sim_atd = self.attn_atd(
             x, td, x_size
-        )  # x_atd: (b, n, c)  sim_atd: (b, n,)
+        )  # x_atd: (b, n, c)  sim_atd: (b, n, m)
 
         # AC_MSA
         x_aca = self.attn_aca(qkv, sim_atd, x_size)
@@ -492,12 +463,12 @@ class ATDTransformerLayer(nn.Module):
         # partition windows
         x_windows = window_partition(
             shifted_qkv, self.window_size
-        )  # nw*b, window_size, window_size, c
+        )  # nw*b, window_size, window_size, c3
         x_windows = x_windows.view(
             -1, self.window_size * self.window_size, c3
-        )  # nw*b, window_size*window_size, c
+        )  # nw*b, window_size*window_size, c3
 
-        # W-MSA/SW-MSA (to be compatible for testing on images whose shapes are the multiple of window size
+        # W-MSA/SW-MSA
         attn_windows = self.attn_win(x_windows, rpi=params["rpi_sa"], mask=attn_mask)
 
         # merge windows
@@ -518,10 +489,12 @@ class ATDTransformerLayer(nn.Module):
         x = x + self.convffn(self.norm2(x), x_size)
 
         b, N, c = x.shape
-        b, n, c = td.shape
+        b, n_td, c_td = td.shape
+        _ = (n_td, c_td)  # silence
 
         # Adaptive Token Refinement
         if not self.is_last:
+            # sim_atd: (b, n, m) → (b, m, n)
             mask_soft = self.softmax(self.norm3(sim_atd.transpose(-1, -2)))
             mask_x = x.reshape(b, N, c)
             s = self.sigmoid(self.sigma)
@@ -531,15 +504,7 @@ class ATDTransformerLayer(nn.Module):
 
 
 class PatchMerging(nn.Module):
-    r"""Patch Merging Layer.
-
-    Args:
-    ----
-        input_resolution (tuple[int]): Resolution of input feature.
-        dim (int): Number of input channels.
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
-
-    """
+    r"""Patch Merging Layer."""
 
     def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm):
         super().__init__()
@@ -571,26 +536,7 @@ class PatchMerging(nn.Module):
 
 
 class BasicBlock(nn.Module):
-    """A basic ATD Block for one stage.
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        idx (int): Block index.
-        depth (int): Number of blocks.
-        num_heads (int): Number of attention heads.
-        window_size (int): Local window size.
-        category_size (int): Category size for AC-MSA.
-        num_tokens (int): Token number for each token dictionary.
-        reducted_dim (int): Reducted dimension number for query and key matrix.
-        convffn_kernel_size (int): Convolutional kernel size for ConvFFN.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
-        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
-
-    """
+    """A basic ATD Block for one stage."""
 
     def __init__(
         self,
@@ -658,17 +604,7 @@ class BasicBlock(nn.Module):
 
 
 class PatchEmbed(nn.Module):
-    r"""Image to Patch Embedding
-
-    Args:
-    ----
-        img_size (int): Image size.  Default: 224.
-        patch_size (int): Patch token size. Default: 4.
-        in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-
-    """
+    r"""Image to Patch Embedding"""
 
     def __init__(
         self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None
@@ -701,17 +637,7 @@ class PatchEmbed(nn.Module):
 
 
 class PatchUnEmbed(nn.Module):
-    r"""Image to Patch Unembedding
-
-    Args:
-    ----
-        img_size (int): Image size.  Default: 224.
-        patch_size (int): Patch token size. Default: 4.
-        in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-
-    """
+    r"""Patch to Image Un-embedding"""
 
     def __init__(
         self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None
@@ -739,24 +665,7 @@ class PatchUnEmbed(nn.Module):
 
 
 class ATDB(nn.Module):
-    """Adaptive Token Dictionary Block (ATDB).
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        depth (int): Number of blocks.
-        num_heads (int): Number of attention heads.
-        window_size (int): Local window size.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
-        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
-        img_size: Input image size.
-        patch_size: Patch size.
-        resi_connection: The convolutional block before residual connection.
-
-    """
+    """Adaptive Token Dictionary Block (ATDB)."""
 
     def __init__(
         self,
@@ -827,6 +736,8 @@ class ATDB(nn.Module):
                 nn.LeakyReLU(negative_slope=0.2, inplace=True),
                 nn.Conv2d(dim // 4, dim, 3, 1, 1),
             )
+        else:
+            raise ValueError(f"Unknown resi_connection: {resi_connection}")
 
     def forward(self, x, x_size, params):
         return (
@@ -839,46 +750,41 @@ class ATDB(nn.Module):
         )
 
 
+# -------------------------------------------------------------------------
+# Upsample modules
+# -------------------------------------------------------------------------
 class Upsample(nn.Sequential):
     """Upsample module.
 
     Args:
-    ----
-       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
+        scale (int): Upscale factor. Supported: 2^n and 3.
         num_feat (int): Channel number of intermediate features.
-
     """
 
-    def __init__(self,self.upscale = 4, num_feat):
+    def __init__(self, scale, num_feat):
         m = []
-        self.scale =self.upscale = 4
+        self.scale = scale
         self.num_feat = num_feat
-        if (scale & (scale - 1)) == 0:  #self.upscale = 4 = 2^n
+
+        if (scale & (scale - 1)) == 0:  # 2^n
             for _ in range(int(math.log2(scale))):
                 m.append(nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1))
                 m.append(nn.PixelShuffle(2))
-        elifself.upscale = 4 == 3:
+        elif scale == 3:
             m.append(nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1))
             m.append(nn.PixelShuffle(3))
         else:
             raise ValueError(
-                f"scale {scale} is not supported. Supportedself.upscale = 4s: 2^n and 3."
+                f"scale {scale} is not supported. Supported scales: 2^n and 3."
             )
+
         super(Upsample, self).__init__(*m)
 
 
 class UpsampleOneStep(nn.Sequential):
-    """UpsampleOneStep module (the difference with Upsample is that it always only has 1conv + 1pixelshuffle)
-       Used in lightweight SR to save parameters.
+    """UpsampleOneStep module (1 conv + 1 pixelshuffle)."""
 
-    Args:
-    ----
-       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
-        num_feat (int): Channel number of intermediate features.
-
-    """
-
-    def __init__(self,self.upscale = 4, num_feat, num_out_ch, input_resolution=None):
+    def __init__(self, scale, num_feat, num_out_ch, input_resolution=None):
         self.num_feat = num_feat
         self.input_resolution = input_resolution
         m = []
@@ -887,29 +793,12 @@ class UpsampleOneStep(nn.Sequential):
         super(UpsampleOneStep, self).__init__(*m)
 
 
+# -------------------------------------------------------------------------
+# main ATD model
+# -------------------------------------------------------------------------
 class atd(nn.Module):
     """Transcending the Limit of Local Window: Advanced Super-Resolution Transformer
-        with Adaptive Token Dictionary. - https://arxiv.org/abs/2401.08209
-
-    Args:
-    ----
-        img_size (int | tuple(int)): Input image size. Default 64
-        patch_size (int | tuple(int)): Patch size. Default: 1
-        in_chans (int): Number of input image channels. Default: 3
-        embed_dim (int): Patch embedding dimension. Default: 96
-        depths (tuple(int)): Depth of each Swin Transformer layer.
-        num_heads (tuple(int)): Number of attention heads in different layers.
-        window_size (int): Window size. Default: 7
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim. Default: 2
-        qkv_bias (bool): If True, add a learnable bias to query, key, value. Default: True
-        norm_layer (nn.Module): Normalization layer. Default: nn.LayerNorm.
-        ape (bool): If True, add absolute position embedding to the patch embedding. Default: False
-        patch_norm (bool): If True, add normalization after patch embedding. Default: True
-        upscale: Upscale factor. 2/3/4/8 for image SR, 1 for denoising and compress artifact reduction
-        img_range: Image range. 1. or 255.
-        upsampler: The reconstruction reconstruction module. 'pixelshuffle'/'pixelshuffledirect'/'nearest+conv'/None
-        resi_connection: The convolutional block before residual connection. '1conv'/'3conv'
-
+    with Adaptive Token Dictionary. - https://arxiv.org/abs/2401.08209
     """
 
     def _init_weights(self, m):
@@ -964,7 +853,7 @@ class atd(nn.Module):
         else:
             self.mean = torch.zeros(1, 1, 1, 1)
 
-        self.upscale = 4
+        self.upscale = upscale
         self.upsampler = upsampler
 
         # ------------------------- 1, shallow feature extraction ------------------------- #
@@ -1048,6 +937,8 @@ class atd(nn.Module):
                 nn.LeakyReLU(negative_slope=0.2, inplace=True),
                 nn.Conv2d(embed_dim // 4, embed_dim, 3, 1, 1),
             )
+        else:
+            raise ValueError(f"Unknown resi_connection: {resi_connection}")
 
         # ------------------------- 3, high quality image reconstruction ------------------------- #
         if self.upsampler == "pixelshuffle":
@@ -1055,12 +946,12 @@ class atd(nn.Module):
             self.conv_before_upsample = nn.Sequential(
                 nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
             )
-            self.upsample = Upsample(upscale, num_feat)
+            self.upsample = Upsample(self.upscale, num_feat)
             self.conv_last = nn.Conv2d(num_feat, num_out_ch, 3, 1, 1)
         elif self.upsampler == "pixelshuffledirect":
             # for lightweight SR (to save parameters)
             self.upsample = UpsampleOneStep(
-                upscale,
+                self.upscale,
                 embed_dim,
                 num_out_ch,
                 (patches_resolution[0], patches_resolution[1]),
@@ -1139,9 +1030,9 @@ class atd(nn.Module):
             slice(-(self.window_size // 2), None),
         )
         cnt = 0
-        for h in h_slices:
-            for w in w_slices:
-                img_mask[:, h, w, :] = cnt
+        for hs in h_slices:
+            for ws in w_slices:
+                img_mask[:, hs, ws, :] = cnt
                 cnt += 1
 
         mask_windows = window_partition(
@@ -1195,19 +1086,23 @@ class atd(nn.Module):
             x = self.conv_before_upsample(x)
             x = self.lrelu(
                 self.conv_up1(
-                    torch.nn.functional.interpolate(x,self.upscale = 4_factor=2, mode="nearest")
+                    torch.nn.functional.interpolate(
+                        x, scale_factor=2, mode="nearest"
+                    )
                 )
             )
             x = self.lrelu(
                 self.conv_up2(
-                    torch.nn.functional.interpolate(x,self.upscale = 4_factor=2, mode="nearest")
+                    torch.nn.functional.interpolate(
+                        x, scale_factor=2, mode="nearest"
+                    )
                 )
             )
             x = self.conv_last(self.lrelu(self.conv_hr(x)))
         else:
             # for image denoising and JPEG compression artifact reduction
             x_first = self.conv_first(x)
-            res = self.conv_after_body(self.forward_features(x_first)) + x_first
+            res = self.conv_after_body(self.forward_features(x_first, params)) + x_first
             x = x + self.conv_last(res)
 
         if self.is_norm:
