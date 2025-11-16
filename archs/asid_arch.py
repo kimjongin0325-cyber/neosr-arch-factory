@@ -736,7 +736,7 @@ class asid(nn.Module):
         res_num=3,
         block_num=1,
         window_size=8,
-       self.upscale = 4
+        scale=4,
         flash_attn=True,
         d8=False,
         pe=False,
@@ -747,7 +747,8 @@ class asid(nn.Module):
 
         self.res_num = res_num
         self.window_size = window_size
-        self.up_scale =self.upscale = 4
+        self.up_scale = 4
+        self.upscale = 4
         self.d8 = d8
         self.drop = nn.Dropout2d(drop)
 
