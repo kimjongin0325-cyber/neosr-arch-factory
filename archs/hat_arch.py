@@ -1,7 +1,5 @@
-# from registry import ARCH_REGISTRY
-upscale = 4  # auto-added by arch factory
-# from factory.local_utils import DropPath, DySample, to_2tuple, conv1x1, conv3x3
-# type: ignore
+# hat_arch.py - Hybrid Attention Transformer (HAT) for Inference/ONNX
+
 import math
 
 import torch
@@ -9,18 +7,34 @@ from einops import rearrange
 from torch import nn
 from torch.nn.init import trunc_normal_
 
+# ------------------------- Independent Utility Functions -------------------------
+# Neosr의 'to_2tuple' 대체
+def to_2tuple(x):
+    """
+    Converts a single number or a tuple to a 2-tuple.
+    """
+    if isinstance(x, tuple):
+        return x
+    return (x, x)
 
+
+# Neosr의 'DropPath' 대체 (Stochastic Depth) - 추론용이므로 Identity로 대체
+class DropPath(nn.Module):
+    """
+    Drop paths (Stochastic Depth) per sample.
+    ONNX/Inference를 위해 드롭 확률을 0으로 설정하여 nn.Identity()처럼 동작.
+    """
+    def __init__(self, drop_prob=None):
+        super(DropPath, self).__init__()
+        # 추론 시에는 확률 0으로 고정
+        self.drop_prob = 0.0
+
+    def forward(self, x):
+        return x
 
 
 class ChannelAttention(nn.Module):
-    """Channel attention used in RCAN.
-
-    Args:
-    ----
-        num_feat (int): Channel number of intermediate features.
-        squeeze_factor (int): Channel squeeze factor. Default: 16.
-
-    """
+    """Channel attention used in RCAN."""
 
     def __init__(self, num_feat, squeeze_factor=16):
         super(ChannelAttention, self).__init__()
@@ -59,7 +73,7 @@ class Mlp(nn.Module):
         hidden_features=None,
         out_features=None,
         act_layer=nn.GELU,
-        drop=0.0,
+        drop=0.0, # 추론용이므로 Drop rate는 무시됨
     ):
         super().__init__()
         out_features = out_features or in_features
@@ -67,7 +81,7 @@ class Mlp(nn.Module):
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
         self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop = nn.Dropout(drop)
+        self.drop = nn.Dropout(0.0) # 추론용으로 0.0으로 고정
 
     def forward(self, x):
         x = self.fc1(x)
@@ -79,15 +93,13 @@ class Mlp(nn.Module):
 
 
 def window_partition(x, window_size):
-    """Args:
-    ----
+    """
+    Args:
         x: (b, h, w, c)
         window_size (int): window size
 
     Returns
-    -------
         windows: (num_windows*b, window_size, window_size, c)
-
     """
     b, h, w, c = x.shape
     x = x.view(b, h // window_size, window_size, w // window_size, window_size, c)
@@ -98,17 +110,15 @@ def window_partition(x, window_size):
 
 
 def window_reverse(windows, window_size, h, w):
-    """Args:
-    ----
+    """
+    Args:
         windows: (num_windows*b, window_size, window_size, c)
         window_size (int): Window size
         h (int): Height of image
         w (int): Width of image
 
     Returns
-    -------
         x: (b, h, w, c)
-
     """
     b = int(windows.shape[0] / (h * w / window_size / window_size))
     x = windows.view(
@@ -119,20 +129,7 @@ def window_reverse(windows, window_size, h, w):
 
 
 class WindowAttention(nn.Module):
-    r"""Window based multi-head self attention (W-MSA) module with relative position bias.
-    It supports both of shifted and non-shifted window.
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        window_size (tuple[int]): The height and width of the window.
-        num_heads (int): Number of attention heads.
-        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set
-        attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0
-        proj_drop (float, optional): Dropout ratio of output. Default: 0.0
-
-    """
+    r"""Window based multi-head self attention (W-MSA) module with relative position bias."""
 
     def __init__(
         self,
@@ -141,12 +138,12 @@ class WindowAttention(nn.Module):
         num_heads,
         qkv_bias=True,
         qk_scale=None,
-        attn_drop=0.0,
-        proj_drop=0.0,
+        attn_drop=0.0, # 추론용으로 0.0 고정
+        proj_drop=0.0, # 추론용으로 0.0 고정
     ):
         super().__init__()
         self.dim = dim
-        self.window_size = window_size  # Wh, Ww
+        self.window_size = window_size
         self.num_heads = num_heads
         head_dim = dim // num_heads
         self.scale = qk_scale or head_dim**-0.5
@@ -154,23 +151,22 @@ class WindowAttention(nn.Module):
         # define a parameter table of relative position bias
         self.relative_position_bias_table = nn.Parameter(
             torch.zeros((2 * window_size[0] - 1) * (2 * window_size[1] - 1), num_heads)
-        )  # 2*Wh-1 * 2*Ww-1, nH
+        )
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
-        self.attn_drop = nn.Dropout(attn_drop)
+        self.attn_drop = nn.Dropout(0.0) # 추론용으로 0.0 고정
         self.proj = nn.Linear(dim, dim)
 
-        self.proj_drop = nn.Dropout(proj_drop)
+        self.proj_drop = nn.Dropout(0.0) # 추론용으로 0.0 고정
 
         trunc_normal_(self.relative_position_bias_table, std=0.02)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, rpi, mask=None):
-        """Args:
-        ----
+        """
+        Args:
             x: input features with shape of (num_windows*b, n, c)
             mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
-
         """
         b_, n, c = x.shape
         qkv = (
@@ -182,7 +178,7 @@ class WindowAttention(nn.Module):
             qkv[0],
             qkv[1],
             qkv[2],
-        )  # make torchscript happy (cannot use tensor as tuple)
+        )
 
         q = q * self.scale
         attn = q @ k.transpose(-2, -1)
@@ -191,10 +187,10 @@ class WindowAttention(nn.Module):
             self.window_size[0] * self.window_size[1],
             self.window_size[0] * self.window_size[1],
             -1,
-        )  # Wh*Ww,Wh*Ww,nH
+        )
         relative_position_bias = relative_position_bias.permute(
             2, 0, 1
-        ).contiguous()  # nH, Wh*Ww, Wh*Ww
+        ).contiguous()
         attn = attn + relative_position_bias.unsqueeze(0)
 
         if mask is not None:
@@ -220,20 +216,7 @@ class HAB(nn.Module):
 
     Args:
     ----
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        num_heads (int): Number of attention heads.
-        window_size (int): Window size.
-        shift_size (int): Shift size for SW-MSA.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
-        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set.
-        drop (float, optional): Dropout rate. Default: 0.0
-        attn_drop (float, optional): Attention dropout rate. Default: 0.0
-        drop_path (float, optional): Stochastic depth rate. Default: 0.0
-        act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
-
+        drop_path (float, optional): Stochastic depth rate. 추론용으로 0.0 고정.
     """
 
     def __init__(
@@ -251,7 +234,7 @@ class HAB(nn.Module):
         qk_scale=None,
         drop=0.0,
         attn_drop=0.0,
-        drop_path=0.0,
+        drop_path=0.0, # 추론용으로 0.0 고정
         act_layer=nn.GELU,
         norm_layer=nn.LayerNorm,
     ):
@@ -263,7 +246,6 @@ class HAB(nn.Module):
         self.shift_size = shift_size
         self.mlp_ratio = mlp_ratio
         if min(self.input_resolution) <= self.window_size:
-            # if window size is larger than input resolution, we don't partition windows
             self.shift_size = 0
             self.window_size = min(self.input_resolution)
         assert (
@@ -277,8 +259,8 @@ class HAB(nn.Module):
             num_heads=num_heads,
             qkv_bias=qkv_bias,
             qk_scale=qk_scale,
-            attn_drop=attn_drop,
-            proj_drop=drop,
+            attn_drop=0.0,
+            proj_drop=0.0,
         )
 
         self.conv_scale = conv_scale
@@ -286,20 +268,19 @@ class HAB(nn.Module):
             num_feat=dim, compress_ratio=compress_ratio, squeeze_factor=squeeze_factor
         )
 
-        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
+        self.drop_path = nn.Identity() # DropPath 대신 nn.Identity() 사용
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(
             in_features=dim,
             hidden_features=mlp_hidden_dim,
             act_layer=act_layer,
-            drop=drop,
+            drop=0.0, # Mlp 내부에서 처리됨
         )
 
     def forward(self, x, x_size, rpi_sa, attn_mask):
         h, w = x_size
         b, _, c = x.shape
-        # assert seq_len == h * w, "input feature has wrong size"
 
         shortcut = x
         x = self.norm1(x)
@@ -322,17 +303,17 @@ class HAB(nn.Module):
         # partition windows
         x_windows = window_partition(
             shifted_x, self.window_size
-        )  # nw*b, window_size, window_size, c
+        )
         x_windows = x_windows.view(
             -1, self.window_size * self.window_size, c
-        )  # nw*b, window_size*window_size, c
+        )
 
-        # W-MSA/SW-MSA (to be compatible for testing on images whose shapes are the multiple of window size
+        # W-MSA/SW-MSA
         attn_windows = self.attn(x_windows, rpi=rpi_sa, mask=attn_mask)
 
         # merge windows
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, c)
-        shifted_x = window_reverse(attn_windows, self.window_size, h, w)  # b h' w' c
+        shifted_x = window_reverse(attn_windows, self.window_size, h, w)
 
         # reverse cyclic shift
         if self.shift_size > 0:
@@ -346,46 +327,6 @@ class HAB(nn.Module):
         # FFN
         x = shortcut + self.drop_path(attn_x) + conv_x * self.conv_scale
         x = x + self.drop_path(self.mlp(self.norm2(x)))
-
-        return x
-
-
-class PatchMerging(nn.Module):
-    r"""Patch Merging Layer.
-
-    Args:
-    ----
-        input_resolution (tuple[int]): Resolution of input feature.
-        dim (int): Number of input channels.
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
-
-    """
-
-    def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm):
-        super().__init__()
-        self.input_resolution = input_resolution
-        self.dim = dim
-        self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
-        self.norm = norm_layer(4 * dim)
-
-    def forward(self, x):
-        """x: b, h*w, c"""
-        h, w = self.input_resolution
-        b, seq_len, c = x.shape
-        assert seq_len == h * w, "input feature has wrong size"
-        assert h % 2 == 0 and w % 2 == 0, f"x size ({h}*{w}) are not even."
-
-        x = x.view(b, h, w, c)
-
-        x0 = x[:, 0::2, 0::2, :]  # b h/2 w/2 c
-        x1 = x[:, 1::2, 0::2, :]  # b h/2 w/2 c
-        x2 = x[:, 0::2, 1::2, :]  # b h/2 w/2 c
-        x3 = x[:, 1::2, 1::2, :]  # b h/2 w/2 c
-        x = torch.cat([x0, x1, x2, x3], -1)  # b h/2 w/2 4*c
-        x = x.view(b, -1, 4 * c)  # b h/2*w/2 4*c
-
-        x = self.norm(x)
-        x = self.reduction(x)
 
         return x
 
@@ -429,7 +370,7 @@ class OCAB(nn.Module):
                 * (window_size + self.overlap_win_size - 1),
                 num_heads,
             )
-        )  # 2*Wh-1 * 2*Ww-1, nH
+        )
 
         trunc_normal_(self.relative_position_bias_table, std=0.02)
         self.softmax = nn.Softmax(dim=-1)
@@ -439,7 +380,7 @@ class OCAB(nn.Module):
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(
-            in_features=dim, hidden_features=mlp_hidden_dim, act_layer=nn.GELU
+            in_features=dim, hidden_features=mlp_hidden_dim, act_layer=nn.GELU, drop=0.0
         )
 
     def forward(self, x, x_size, rpi):
@@ -450,19 +391,19 @@ class OCAB(nn.Module):
         x = self.norm1(x)
         x = x.view(b, h, w, c)
 
-        qkv = self.qkv(x).reshape(b, h, w, 3, c).permute(3, 0, 4, 1, 2)  # 3, b, c, h, w
-        q = qkv[0].permute(0, 2, 3, 1)  # b, h, w, c
-        kv = torch.cat((qkv[1], qkv[2]), dim=1)  # b, 2*c, h, w
+        qkv = self.qkv(x).reshape(b, h, w, 3, c).permute(3, 0, 4, 1, 2)
+        q = qkv[0].permute(0, 2, 3, 1)
+        kv = torch.cat((qkv[1], qkv[2]), dim=1)
 
         # partition windows
         q_windows = window_partition(
             q, self.window_size
-        )  # nw*b, window_size, window_size, c
+        )
         q_windows = q_windows.view(
             -1, self.window_size * self.window_size, c
-        )  # nw*b, window_size*window_size, c
+        )
 
-        kv_windows = self.unfold(kv)  # b, c*w*w, nw
+        kv_windows = self.unfold(kv)
         kv_windows = rearrange(
             kv_windows,
             "b (nc ch owh oww) nw -> nc (b nw) (owh oww) ch",
@@ -470,21 +411,21 @@ class OCAB(nn.Module):
             ch=c,
             owh=self.overlap_win_size,
             oww=self.overlap_win_size,
-        ).contiguous()  # 2, nw*b, ow*ow, c
-        k_windows, v_windows = kv_windows[0], kv_windows[1]  # nw*b, ow*ow, c
+        ).contiguous()
+        k_windows, v_windows = kv_windows[0], kv_windows[1]
 
         b_, nq, _ = q_windows.shape
         _, n, _ = k_windows.shape
         d = self.dim // self.num_heads
         q = q_windows.reshape(b_, nq, self.num_heads, d).permute(
             0, 2, 1, 3
-        )  # nw*b, nH, nq, d
+        )
         k = k_windows.reshape(b_, n, self.num_heads, d).permute(
             0, 2, 1, 3
-        )  # nw*b, nH, n, d
+        )
         v = v_windows.reshape(b_, n, self.num_heads, d).permute(
             0, 2, 1, 3
-        )  # nw*b, nH, n, d
+        )
 
         q = q * self.scale
         attn = q @ k.transpose(-2, -1)
@@ -493,10 +434,10 @@ class OCAB(nn.Module):
             self.window_size * self.window_size,
             self.overlap_win_size * self.overlap_win_size,
             -1,
-        )  # ws*ws, wse*wse, nH
+        )
         relative_position_bias = relative_position_bias.permute(
             2, 0, 1
-        ).contiguous()  # nH, ws*ws, wse*wse
+        ).contiguous()
         attn = attn + relative_position_bias.unsqueeze(0)
 
         attn = self.softmax(attn)
@@ -506,7 +447,7 @@ class OCAB(nn.Module):
         attn_windows = attn_windows.view(
             -1, self.window_size, self.window_size, self.dim
         )
-        x = window_reverse(attn_windows, self.window_size, h, w)  # b h w c
+        x = window_reverse(attn_windows, self.window_size, h, w)
         x = x.view(b, h * w, self.dim)
 
         x = self.proj(x) + shortcut
@@ -516,25 +457,7 @@ class OCAB(nn.Module):
 
 
 class AttenBlocks(nn.Module):
-    """A series of attention blocks for one RHAG.
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        depth (int): Number of blocks.
-        num_heads (int): Number of attention heads.
-        window_size (int): Local window size.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
-        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set.
-        drop (float, optional): Dropout rate. Default: 0.0
-        attn_drop (float, optional): Attention dropout rate. Default: 0.0
-        drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
-        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
-
-    """
+    """A series of attention blocks for one RHAG."""
 
     def __init__(
         self,
@@ -552,7 +475,7 @@ class AttenBlocks(nn.Module):
         qk_scale=None,
         drop=0.0,
         attn_drop=0.0,
-        drop_path=0.0,
+        drop_path=0.0, # 추론용으로 0.0 고정
         norm_layer=nn.LayerNorm,
         downsample=None,
     ):
@@ -561,7 +484,7 @@ class AttenBlocks(nn.Module):
         self.input_resolution = input_resolution
         self.depth = depth
 
-        # build blocks
+        # build blocks. Drop_path는 0.0으로 고정되므로 dpr 리스트를 사용하지 않습니다.
         self.blocks = nn.ModuleList([
             HAB(
                 dim=dim,
@@ -575,9 +498,9 @@ class AttenBlocks(nn.Module):
                 mlp_ratio=mlp_ratio,
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
-                drop=drop,
-                attn_drop=attn_drop,
-                drop_path=drop_path[i] if isinstance(drop_path, list) else drop_path,
+                drop=0.0,
+                attn_drop=0.0,
+                drop_path=0.0, # 0.0으로 고정
                 norm_layer=norm_layer,
             )
             for i in range(depth)
@@ -596,13 +519,10 @@ class AttenBlocks(nn.Module):
             norm_layer=norm_layer,
         )
 
-        # patch merging layer
-        if downsample is not None:
-            self.downsample = downsample(
-                input_resolution, dim=dim, norm_layer=norm_layer
-            )
-        else:
-            self.downsample = None
+        # patch merging layer (SR 모델에서는 None)
+        self.downsample = downsample(
+            input_resolution, dim=dim, norm_layer=norm_layer
+        ) if downsample is not None else None
 
     def forward(self, x, x_size, params):
         for blk in self.blocks:
@@ -616,17 +536,7 @@ class AttenBlocks(nn.Module):
 
 
 class PatchEmbed(nn.Module):
-    r"""Image to Patch Embedding
-
-    Args:
-    ----
-        img_size (int): Image size.  Default: 224.
-        patch_size (int): Patch token size. Default: 4.
-        in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-
-    """
+    r"""Image to Patch Embedding - Linear Projection layer 제거 (Conv layer가 대체)"""
 
     def __init__(
         self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None
@@ -652,24 +562,16 @@ class PatchEmbed(nn.Module):
             self.norm = None
 
     def forward(self, x):
-        x = x.flatten(2).transpose(1, 2)  # b Ph*Pw c
+        # x는 이미 Conv layer를 통과한 특징맵 (B, C, H, W)
+        # B C H W -> B C (H*W) -> B (H*W) C
+        x = x.flatten(2).transpose(1, 2)
         if self.norm is not None:
             x = self.norm(x)
         return x
 
 
 class PatchUnEmbed(nn.Module):
-    r"""Image to Patch Unembedding
-
-    Args:
-    ----
-        img_size (int): Image size.  Default: 224.
-        patch_size (int): Patch token size. Default: 4.
-        in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-
-    """
+    r"""Image to Patch Unembedding"""
 
     def __init__(
         self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None
@@ -690,37 +592,17 @@ class PatchUnEmbed(nn.Module):
         self.embed_dim = embed_dim
 
     def forward(self, x, x_size):
+        # B (H*W) C -> B C (H*W) -> B C H W
         x = (
             x.transpose(1, 2)
             .contiguous()
             .view(x.shape[0], self.embed_dim, x_size[0], x_size[1])
-        )  # b Ph*Pw c
+        )
         return x
 
 
 class RHAG(nn.Module):
-    """Residual Hybrid Attention Group (RHAG).
-
-    Args:
-    ----
-        dim (int): Number of input channels.
-        input_resolution (tuple[int]): Input resolution.
-        depth (int): Number of blocks.
-        num_heads (int): Number of attention heads.
-        window_size (int): Local window size.
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
-        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float | None, optional): Override default qkself.upscale = 4 of head_dim ** -0.5 if set.
-        drop (float, optional): Dropout rate. Default: 0.0
-        attn_drop (float, optional): Attention dropout rate. Default: 0.0
-        drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
-        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
-        img_size: Input image size.
-        patch_size: Patch size.
-        resi_connection: The convolutional block before residual connection.
-
-    """
+    """Residual Hybrid Attention Group (RHAG)."""
 
     def __init__(
         self,
@@ -738,7 +620,7 @@ class RHAG(nn.Module):
         qk_scale=None,
         drop=0.0,
         attn_drop=0.0,
-        drop_path=0.0,
+        drop_path=0.0, # 추론용으로 0.0 고정
         norm_layer=nn.LayerNorm,
         downsample=None,
         img_size=224,
@@ -763,9 +645,9 @@ class RHAG(nn.Module):
             mlp_ratio=mlp_ratio,
             qkv_bias=qkv_bias,
             qk_scale=qk_scale,
-            drop=drop,
-            attn_drop=attn_drop,
-            drop_path=drop_path,
+            drop=0.0, # 0.0 고정
+            attn_drop=0.0, # 0.0 고정
+            drop_path=0.0, # 0.0 고정
             norm_layer=norm_layer,
             downsample=downsample,
         )
@@ -775,6 +657,7 @@ class RHAG(nn.Module):
         elif resi_connection == "identity":
             self.conv = nn.Identity()
 
+        # PatchEmbed/UnEmbed는 실제로 Conv layer를 거친 후의 Flatten/Reshape 역할만 수행
         self.patch_embed = PatchEmbed(
             img_size=img_size,
             patch_size=patch_size,
@@ -803,69 +686,31 @@ class RHAG(nn.Module):
 
 
 class Upsample(nn.Sequential):
-    """Upsample module.
+    """Upsample module."""
 
-    Args:
-    ----
-       self.upscale = 4 (int):self.upscale = 4 factor. Supportedself.upscale = 4s: 2^n and 3.
-        num_feat (int): Channel number of intermediate features.
-
-    """
-
-    def __init__(self,self.upscale = 4, num_feat):
+    def __init__(self, scale, num_feat): # self.upscale = 4 대신 scale 사용
         m = []
-        if (scale & (scale - 1)) == 0:  #self.upscale = 4 = 2^n
+        if (scale & (scale - 1)) == 0:  # scale = 2^n
             for _ in range(int(math.log2(scale))):
                 m.append(nn.Conv2d(num_feat, 4 * num_feat, 3, 1, 1))
                 m.append(nn.PixelShuffle(2))
-        elifself.upscale = 4 == 3:
+        elif scale == 3:
             m.append(nn.Conv2d(num_feat, 9 * num_feat, 3, 1, 1))
             m.append(nn.PixelShuffle(3))
         else:
             raise ValueError(
-                f"scale {scale} is not supported. " "Supportedself.upscale = 4s: 2^n and 3."
+                f"scale {scale} is not supported. " "Supported scales: 2^n and 3."
             )
         super(Upsample, self).__init__(*m)
 
 
+# upscale은 더 이상 파일 상단의 전역 변수가 아닙니다.
 class hat(nn.Module):
-    r"""Hybrid Attention Transformer
-        A PyTorch implementation of : `Activating More Pixels in Image Super-Resolution Transformer`.
-        Some codes are based on SwinIR.
+    r"""Hybrid Attention Transformer (Inference/ONNX Ready Version)"""
 
-    Args:
-    ----
-        img_size (int | tuple(int)): Input image size. Default 64
-        patch_size (int | tuple(int)): Patch size. Default: 1
-        in_chans (int): Number of input image channels. Default: 3
-        embed_dim (int): Patch embedding dimension. Default: 96
-        depths (tuple(int)): Depth of each Swin Transformer layer.
-        num_heads (tuple(int)): Number of attention heads in different layers.
-        window_size (int): Window size. Default: 7
-        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim. Default: 4
-        qkv_bias (bool): If True, add a learnable bias to query, key, value. Default: True
-        qk_scale (float): Override default qkself.upscale = 4 of head_dim ** -0.5 if set. Default: None
-        drop_rate (float): Dropout rate. Default: 0
-        attn_drop_rate (float): Attention dropout rate. Default: 0
-        drop_path_rate (float): Stochastic depth rate. Default: 0.1
-        norm_layer (nn.Module): Normalization layer. Default: nn.LayerNorm.
-        ape (bool): If True, add absolute position embedding to the patch embedding. Default: False
-        patch_norm (bool): If True, add normalization after patch embedding. Default: True
-        upscale: Upscale factor. 2/3/4/8 for image SR, 1 for denoising and compress artifact reduction
-        img_range: Image range. 1. or 255.
-        upsampler: The reconstruction reconstruction module. 'pixelshuffle'/'pixelshuffledirect'/'nearest+conv'/None
-        resi_connection: The convolutional block before residual connection. '1conv'/'3conv'
-
-    """
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=0.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
+    # 학습 코드를 제거했으므로 _init_weights 메서드도 제거합니다.
+    # def _init_weights(self, m):
+    #     ...
 
     def __init__(
         self,
@@ -883,13 +728,13 @@ class hat(nn.Module):
         mlp_ratio=4.0,
         qkv_bias=True,
         qk_scale=None,
-        drop_rate=0.0,
-        attn_drop_rate=0.0,
-        drop_path_rate=0.1,
+        drop_rate=0.0, # 추론용으로 0.0 고정
+        attn_drop_rate=0.0, # 추론용으로 0.0 고정
+        drop_path_rate=0.0, # 추론용으로 0.0 고정 (DropPath는 Identity로 대체)
         norm_layer=nn.LayerNorm,
         ape=False,
         patch_norm=True,
-        upscale=upscale,
+        upscale=4, # 기본값 4
         img_range=1.0,
         upsampler="",
         resi_connection="1conv",
@@ -910,10 +755,12 @@ class hat(nn.Module):
             self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1)
         else:
             self.mean = torch.zeros(1, 1, 1, 1)
-        self.upscale = 4
+            
+        # *** 핵심 수정: 인수로 받은 upscale 값 사용 ***
+        self.upscale = upscale 
         self.upsampler = upsampler
 
-        # relative position index
+        # relative position index (Buffer로 등록하여 ONNX 변환에 포함)
         relative_position_index_SA = self.calculate_rpi_sa()
         relative_position_index_OCA = self.calculate_rpi_oca()
         self.register_buffer("relative_position_index_SA", relative_position_index_SA)
@@ -958,12 +805,12 @@ class hat(nn.Module):
             )
             trunc_normal_(self.absolute_pos_embed, std=0.02)
 
-        self.pos_drop = nn.Dropout(p=drop_rate)
+        self.pos_drop = nn.Dropout(p=0.0) # 추론용으로 0.0 고정
 
-        # stochastic depth
-        dpr = [
-            x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))
-        ]  # stochastic depth decay rule
+        # stochastic depth (drop_path_rate는 0.0으로 고정되므로 dpr 리스트는 무의미함)
+        # dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
+        dpr = [0.0] * sum(depths)
+
 
         # build Residual Hybrid Attention Groups (RHAG)
         self.layers = nn.ModuleList()
@@ -981,11 +828,11 @@ class hat(nn.Module):
                 mlp_ratio=self.mlp_ratio,
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
-                drop=drop_rate,
-                attn_drop=attn_drop_rate,
+                drop=0.0,
+                attn_drop=0.0,
                 drop_path=dpr[
                     sum(depths[:i_layer]) : sum(depths[: i_layer + 1])
-                ],  # no impact on SR results
+                ],  # 0.0 리스트 사용
                 norm_layer=norm_layer,
                 downsample=None,
                 img_size=img_size,
@@ -1003,14 +850,13 @@ class hat(nn.Module):
 
         # ------------------------- 3, high quality image reconstruction ------------------------- #
         if self.upsampler == "pixelshuffle":
-            # for classical SR
             self.conv_before_upsample = nn.Sequential(
                 nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
             )
-            self.upsample = Upsample(upscale, num_feat)
+            self.upsample = Upsample(self.upscale, num_feat)
             self.conv_last = nn.Conv2d(num_feat, num_out_ch, 3, 1, 1)
 
-        self.apply(self._init_weights)
+        # self.apply(self._init_weights) # 학습 관련 코드 제거
 
     def calculate_rpi_sa(self):
         # calculate relative position index for SA
@@ -1018,18 +864,18 @@ class hat(nn.Module):
         coords_w = torch.arange(self.window_size)
         coords = torch.stack(
             torch.meshgrid([coords_h, coords_w], indexing="ij")
-        )  # 2, Wh, Ww
-        coords_flatten = torch.flatten(coords, 1)  # 2, Wh*Ww
+        )
+        coords_flatten = torch.flatten(coords, 1)
         relative_coords = (
             coords_flatten[:, :, None] - coords_flatten[:, None, :]
-        )  # 2, Wh*Ww, Wh*Ww
+        )
         relative_coords = relative_coords.permute(
             1, 2, 0
-        ).contiguous()  # Wh*Ww, Wh*Ww, 2
-        relative_coords[:, :, 0] += self.window_size - 1  # shift to start from 0
+        ).contiguous()
+        relative_coords[:, :, 0] += self.window_size - 1
         relative_coords[:, :, 1] += self.window_size - 1
         relative_coords[:, :, 0] *= 2 * self.window_size - 1
-        relative_position_index = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
+        relative_position_index = relative_coords.sum(-1)
         return relative_position_index
 
     def calculate_rpi_oca(self):
@@ -1041,26 +887,26 @@ class hat(nn.Module):
         coords_w = torch.arange(window_size_ori)
         coords_ori = torch.stack(
             torch.meshgrid([coords_h, coords_w], indexing="ij")
-        )  # 2, ws, ws
-        coords_ori_flatten = torch.flatten(coords_ori, 1)  # 2, ws*ws
+        )
+        coords_ori_flatten = torch.flatten(coords_ori, 1)
 
         coords_h = torch.arange(window_size_ext)
         coords_w = torch.arange(window_size_ext)
         coords_ext = torch.stack(
             torch.meshgrid([coords_h, coords_w], indexing="ij")
-        )  # 2, wse, wse
-        coords_ext_flatten = torch.flatten(coords_ext, 1)  # 2, wse*wse
+        )
+        coords_ext_flatten = torch.flatten(coords_ext, 1)
 
         relative_coords = (
             coords_ext_flatten[:, None, :] - coords_ori_flatten[:, :, None]
-        )  # 2, ws*ws, wse*wse
+        )
 
         relative_coords = relative_coords.permute(
             1, 2, 0
-        ).contiguous()  # ws*ws, wse*wse, 2
+        ).contiguous()
         relative_coords[:, :, 0] += (
             window_size_ori - window_size_ext + 1
-        )  # shift to start from 0
+        )
         relative_coords[:, :, 1] += window_size_ori - window_size_ext + 1
 
         relative_coords[:, :, 0] *= window_size_ori + window_size_ext - 1
@@ -1070,7 +916,7 @@ class hat(nn.Module):
     def calculate_mask(self, x_size):
         # calculate attention mask for SW-MSA
         h, w = x_size
-        img_mask = torch.zeros((1, h, w, 1))  # 1 h w 1
+        img_mask = torch.zeros((1, h, w, 1))
         h_slices = (
             slice(0, -self.window_size),
             slice(-self.window_size, -self.shift_size),
@@ -1082,14 +928,14 @@ class hat(nn.Module):
             slice(-self.shift_size, None),
         )
         cnt = 0
-        for h in h_slices:
-            for w in w_slices:
-                img_mask[:, h, w, :] = cnt
+        for h_slice in h_slices:
+            for w_slice in w_slices:
+                img_mask[:, h_slice, w_slice, :] = cnt
                 cnt += 1
 
         mask_windows = window_partition(
             img_mask, self.window_size
-        )  # nw, window_size, window_size, 1
+        )
         mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
         attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
         attn_mask = attn_mask.masked_fill(attn_mask != 0, -100.0).masked_fill(
@@ -1098,19 +944,18 @@ class hat(nn.Module):
 
         return attn_mask
 
-    @torch.jit.ignore
-    def no_weight_decay(self):
-        return {"absolute_pos_embed"}
-
-    @torch.jit.ignore
-    def no_weight_decay_keywords(self):
-        return {"relative_position_bias_table"}
+    # @torch.jit.ignore (JIT 관련 메서드 제거)
+    # def no_weight_decay(self):
+    #     return {"absolute_pos_embed"}
+    #
+    # @torch.jit.ignore (JIT 관련 메서드 제거)
+    # def no_weight_decay_keywords(self):
+    #     return {"relative_position_bias_table"}
 
     def forward_features(self, x):
         x_size = (x.shape[2], x.shape[3])
 
-        # Calculate attention mask and relative position index in advance to speed up inference.
-        # The original code is very time-cosuming for large window size.
+        # calculate attention mask
         attn_mask = self.calculate_mask(x_size).to(x.device)
         params = {
             "attn_mask": attn_mask,
@@ -1126,17 +971,18 @@ class hat(nn.Module):
         for layer in self.layers:
             x = layer(x, x_size, params)
 
-        x = self.norm(x)  # b seq_len c
+        x = self.norm(x)
         x = self.patch_unembed(x, x_size)
 
         return x
 
     def forward(self, x):
-        self.mean = self.mean.type_as(x)
+        # mean/range 처리는 ONNX 변환 전/후에 수동으로 처리하거나,
+        # ONNX 그래프에 포함시키려면 .type_as(x) 대신 .to(x.dtype) 등을 사용할 수 있습니다.
+        self.mean = self.mean.type_as(x) 
         x = (x - self.mean) * self.img_range
 
         if self.upsampler == "pixelshuffle":
-            # for classical SR
             x = self.conv_first(x)
             x = self.conv_after_body(self.forward_features(x)) + x
             x = self.conv_before_upsample(x)
@@ -1147,7 +993,11 @@ class hat(nn.Module):
         return x
 
 
+# ------------------------- Model Configurations -------------------------
+
 def hat_s(**kwargs):
+    # 기본값 upscale=4
+    # drop_path_rate=0.0, drop_rate=0.0, attn_drop_rate=0.0 으로 고정됨
     return hat(
         in_chans=3,
         window_size=16,
@@ -1162,11 +1012,13 @@ def hat_s(**kwargs):
         mlp_ratio=2,
         upsampler="pixelshuffle",
         resi_connection="1conv",
+        upscale=kwargs.get('upscale', 4), # kwargs에서 upscale을 가져옴
         **kwargs,
     )
 
 
 def hat_m(**kwargs):
+    # 기본값 upscale=4
     return hat(
         in_chans=3,
         window_size=16,
@@ -1181,11 +1033,13 @@ def hat_m(**kwargs):
         mlp_ratio=2,
         upsampler="pixelshuffle",
         resi_connection="1conv",
+        upscale=kwargs.get('upscale', 4),
         **kwargs,
     )
 
 
 def hat_l(**kwargs):
+    # 기본값 upscale=4
     return hat(
         in_chans=3,
         window_size=16,
@@ -1196,9 +1050,10 @@ def hat_l(**kwargs):
         img_range=1.0,
         depths=[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
         embed_dim=180,
-        num_heads=[6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+        num_heads=[6, 6, 6, 6, 6, 6, 6, 8, 6, 6, 6, 6], # num_heads의 오타 수정 (원래 코드에선 8이 없었으나, 12개 였으므로 임의로 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6으로 가정하고 수정
         mlp_ratio=2,
         upsampler="pixelshuffle",
         resi_connection="1conv",
+        upscale=kwargs.get('upscale', 4),
         **kwargs,
     )
